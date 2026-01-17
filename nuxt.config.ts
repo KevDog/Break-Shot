@@ -16,7 +16,7 @@ export default defineNuxtConfig({
       login: '/auth/login',
       callback: '/auth/confirm',
       include: undefined,
-      exclude: ['/'],
+      exclude: ['/', '/test-sentry'],
       saveRedirectToCookie: true,
     },
   },
@@ -102,6 +102,7 @@ export default defineNuxtConfig({
     sourceMapsUploadOptions: {
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
     },
   },
 
