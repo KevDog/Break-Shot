@@ -1,0 +1,92 @@
+{
+  "app": {
+    "name": "Break Shot",
+    "description": "14.1 Straight Pool Scoring"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Log In",
+    "signup": "Sign Up",
+    "logout": "Log Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "confirmEmail": "Confirm your email"
+  },
+  "session": {
+    "create": "Create Game",
+    "join": "Join Game",
+    "joinCode": "Join Code",
+    "enterCode": "Enter join code",
+    "waiting": "Waiting for opponent...",
+    "shareCode": "Share this code with your opponent"
+  },
+  "setup": {
+    "title": "Game Setup",
+    "playerName": "Your Name",
+    "fargoRating": "FARGO Rating (optional)",
+    "targetScore": "Target Score",
+    "handicap": "Handicap",
+    "allowNegative": "Allow Negative Scores",
+    "firstBreak": "First Break",
+    "startGame": "Start Game",
+    "recommendedHandicap": "Recommended Handicap"
+  },
+  "game": {
+    "score": "Score",
+    "run": "Run",
+    "highRun": "High Run",
+    "fouls": "Fouls",
+    "inning": "Inning",
+    "racks": "Racks",
+    "yourTurn": "Your Turn",
+    "opponentTurn": "Opponent's Turn",
+    "ballsMade": "Balls Made",
+    "foul": "Foul",
+    "safety": "Safety",
+    "endTurn": "End Turn",
+    "undo": "Undo",
+    "rerack": "Rerack",
+    "endGame": "End Game"
+  },
+  "gameEnd": {
+    "title": "Game Over",
+    "winner": "Winner",
+    "finalScore": "Final Score",
+    "stats": "Game Statistics",
+    "rematch": "Rematch",
+    "endSession": "End Session",
+    "confirmEnd": "Are you sure you want to end the game?"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "reconnecting": "Reconnecting...",
+    "syncing": "Syncing..."
+  },
+  "warnings": {
+    "consecutiveFouls": "Warning: {count} consecutive fouls",
+    "threeFoulPenalty": "3 fouls - 15 point penalty applied"
+  },
+  "notifications": {
+    "opponentConnected": "Opponent connected",
+    "opponentDisconnected": "Opponent disconnected",
+    "backOnline": "Back online",
+    "actionsSynced": "Actions synced"
+  }
+}
