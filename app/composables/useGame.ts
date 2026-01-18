@@ -8,7 +8,12 @@ import type {
   BallsMadePayload,
   Player,
 } from '~~/shared/types'
+import type { Database } from '~/types/database.types'
 import { computeProjection, getDisplayScore, canUndo } from '~~/shared/game/projection'
+
+type DbGame = Database['public']['Tables']['games']['Row']
+type DbPlayer = Database['public']['Tables']['players']['Row']
+type DbGameEvent = Database['public']['Tables']['game_events']['Row']
 
 interface GameState {
   game: Game | null
@@ -20,7 +25,7 @@ interface GameState {
 }
 
 export function useGame() {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient<Database>()
   const user = useSupabaseUser()
 
   const state = useState<GameState>('game', () => ({
@@ -96,7 +101,7 @@ export function useGame() {
 
     try {
       // Get active game for this session
-      const { data: game, error: gameError } = await supabase
+      const { data: gameData, error: gameError } = await supabase
         .from('games')
         .select()
         .eq('session_id', sessionId)
@@ -105,29 +110,32 @@ export function useGame() {
         .limit(1)
         .single()
 
-      if (gameError) throw new Error('Game not found')
+      if (gameError || !gameData) throw new Error('Game not found')
+      const game = gameData as unknown as DbGame
 
       // Get players
-      const { data: players, error: playersError } = await supabase
+      const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select()
         .eq('session_id', sessionId)
 
-      if (playersError) throw playersError
+      if (playersError || !playersData) throw new Error('Failed to load players')
+      const players = playersData as unknown as DbPlayer[]
 
-      const player1 = players.find((p: { role: string }) => p.role === 'player1')
-      const player2 = players.find((p: { role: string }) => p.role === 'player2')
+      const player1 = players.find((p) => p.role === 'player1')
+      const player2 = players.find((p) => p.role === 'player2')
 
       if (!player1 || !player2) throw new Error('Players not found')
 
       // Get game events
-      const { data: events, error: eventsError } = await supabase
+      const { data: eventsData, error: eventsError } = await supabase
         .from('game_events')
         .select()
         .eq('game_id', game.id)
         .order('sequence_number', { ascending: true })
 
       if (eventsError) throw eventsError
+      const events = (eventsData || []) as unknown as DbGameEvent[]
 
       // Map database records to our types
       state.value.game = {
@@ -159,14 +167,14 @@ export function useGame() {
         fargoRating: player2.fargo_rating ?? undefined,
       }
 
-      state.value.events = (events || []).map((e: Record<string, unknown>) => ({
-        id: e.id as string,
-        gameId: e.game_id as string,
-        playerId: e.player_id as string,
-        sequenceNumber: e.sequence_number as number,
+      state.value.events = events.map((e) => ({
+        id: e.id,
+        gameId: e.game_id,
+        playerId: e.player_id,
+        sequenceNumber: e.sequence_number,
         eventType: e.event_type as GameEventType,
-        timestamp: e.created_at as string,
-        undone: e.undone as boolean,
+        timestamp: e.timestamp,
+        undone: e.undone,
         payload: (e.payload || {}) as Record<string, unknown>,
       })) as GameEvent[]
 
@@ -191,18 +199,22 @@ export function useGame() {
     }
 
     try {
-      const { data: event, error } = await supabase
+      type GameEventInsert = Database['public']['Tables']['game_events']['Insert']
+      const insertData: GameEventInsert = {
+        game_id: state.value.game.id,
+        player_id: playerId,
+        event_type: eventType as GameEventInsert['event_type'],
+        payload: JSON.parse(JSON.stringify(payload)),
+      }
+
+      const { data: eventData, error } = await supabase
         .from('game_events')
-        .insert({
-          game_id: state.value.game.id,
-          player_id: playerId,
-          event_type: eventType,
-          payload: payload,
-        })
+        .insert(insertData)
         .select()
         .single()
 
-      if (error) throw error
+      if (error || !eventData) throw error || new Error('Failed to create event')
+      const event = eventData as DbGameEvent
 
       // Add event to local state
       const newEvent: GameEvent = {
@@ -211,9 +223,9 @@ export function useGame() {
         playerId: event.player_id,
         sequenceNumber: event.sequence_number,
         eventType: event.event_type as GameEventType,
-        timestamp: event.created_at,
+        timestamp: event.timestamp,
         undone: event.undone,
-        payload: event.payload,
+        payload: (event.payload || {}) as Record<string, unknown>,
       } as GameEvent
 
       state.value.events.push(newEvent)

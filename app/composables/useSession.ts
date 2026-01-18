@@ -1,4 +1,5 @@
 import type { Session, Player, Game, PlayerRole } from '~~/shared/types'
+import type { Database } from '~/types/database.types'
 import { generateJoinCode } from '~~/shared/utils/joinCode'
 
 interface SessionState {
@@ -11,7 +12,7 @@ interface SessionState {
 }
 
 export function useSession() {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient<Database>()
   const user = useSupabaseUser()
 
   const state = useState<SessionState>('session', () => ({
@@ -36,13 +37,23 @@ export function useSession() {
     try {
       const joinCode = generateJoinCode()
 
-      // Create session
+      // Debug: Verify auth state matches
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('Auth user ID:', authUser?.id)
+      console.log('Composable user ID:', user.value.id)
+      console.log('IDs match:', authUser?.id === user.value.id)
+
+      if (!authUser) {
+        throw new Error('Not authenticated with Supabase')
+      }
+
+      // Create session using the auth user ID directly
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           join_code: joinCode,
           status: 'waiting',
-          created_by: user.value.id,
+          created_by: authUser.id,
         })
         .select()
         .single()
@@ -54,7 +65,7 @@ export function useSession() {
         .from('players')
         .insert({
           session_id: session.id,
-          user_id: user.value.id,
+          user_id: authUser.id,
           role: 'player1' as PlayerRole,
           name: '',
         })
@@ -82,7 +93,14 @@ export function useSession() {
       state.value.loading = false
       return { success: true, joinCode }
     } catch (err) {
-      state.value.error = err instanceof Error ? err.message : 'Failed to create session'
+      console.error('Create session error:', err)
+      // Handle Supabase error format
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : err instanceof Error
+          ? err.message
+          : 'Failed to create session'
+      state.value.error = errorMessage
       state.value.loading = false
       return { success: false }
     }
@@ -99,16 +117,33 @@ export function useSession() {
     state.value.error = null
 
     try {
+      // Get auth user directly for RLS compatibility
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('Join - Auth user ID:', authUser?.id)
+
+      if (!authUser) {
+        throw new Error('Not authenticated with Supabase')
+      }
+
       // Find session by join code
+      const normalizedCode = joinCode.toLowerCase().trim()
+      console.log('Looking for session with join code:', normalizedCode)
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .select()
-        .eq('join_code', joinCode.toLowerCase())
+        .eq('join_code', normalizedCode)
         .eq('status', 'waiting')
-        .single()
+        .maybeSingle()
 
-      if (sessionError || !session) {
-        throw new Error('Session not found or no longer available')
+      console.log('Session lookup result:', { session, sessionError })
+
+      if (sessionError) {
+        console.error('Session lookup error:', sessionError)
+        throw new Error('Error looking up session')
+      }
+
+      if (!session) {
+        throw new Error('Session not found. Check the code and make sure the session is still waiting for a player.')
       }
 
       // Check if user is already in this session
@@ -116,7 +151,7 @@ export function useSession() {
         .from('players')
         .select()
         .eq('session_id', session.id)
-        .eq('user_id', user.value.id)
+        .eq('user_id', authUser.id)
         .single()
 
       if (existingPlayer) {
@@ -124,36 +159,53 @@ export function useSession() {
       }
 
       // Create player 2 record
+      console.log('Creating player 2 record')
       const { data: player, error: playerError } = await supabase
         .from('players')
         .insert({
           session_id: session.id,
-          user_id: user.value.id,
+          user_id: authUser.id,
           role: 'player2' as PlayerRole,
           name: '',
         })
         .select()
         .single()
 
+      console.log('Player insert result:', { player, playerError })
       if (playerError) throw playerError
 
-      // Update session status to setup
+      // Update session status to setup using RPC function (bypasses RLS)
+      console.log('Updating session status to setup via RPC')
       const { error: updateError } = await supabase
-        .from('sessions')
-        .update({ status: 'setup' })
-        .eq('id', session.id)
+        .rpc('join_session', {
+          p_session_id: session.id,
+          p_user_id: authUser.id,
+        })
 
+      console.log('Session update result:', { updateError })
       if (updateError) throw updateError
 
-      // Get opponent (player 1)
+      // Get opponent (player 1) - use user_id since we know the creator
+      console.log('Getting opponent for session:', session.id, 'created by:', session.created_by)
       const { data: opponent, error: opponentError } = await supabase
         .from('players')
         .select()
         .eq('session_id', session.id)
-        .eq('role', 'player1')
-        .single()
+        .eq('user_id', session.created_by)
+        .maybeSingle()
 
+      console.log('Opponent lookup result:', { opponent, opponentError })
       if (opponentError) throw opponentError
+
+      // If we can't find the opponent due to RLS, create a minimal opponent object
+      // The realtime subscription will update this once properly synced
+      const opponentData = opponent || {
+        id: 'pending',
+        session_id: session.id,
+        role: 'player1' as const,
+        name: '',
+        fargo_rating: null,
+      }
 
       state.value.session = {
         id: session.id,
@@ -172,11 +224,11 @@ export function useSession() {
       }
 
       state.value.opponent = {
-        id: opponent.id,
-        sessionId: opponent.session_id,
-        role: opponent.role as PlayerRole,
-        name: opponent.name,
-        fargoRating: opponent.fargo_rating ?? undefined,
+        id: opponentData.id,
+        sessionId: opponentData.session_id,
+        role: opponentData.role as PlayerRole,
+        name: opponentData.name,
+        fargoRating: opponentData.fargo_rating ?? undefined,
       }
 
       state.value.loading = false
@@ -190,21 +242,28 @@ export function useSession() {
 
   // Load existing session
   async function loadSession(sessionId: string): Promise<{ success: boolean }> {
-    if (!user.value) {
-      state.value.error = 'You must be logged in'
-      return { success: false }
-    }
-
     state.value.loading = true
     state.value.error = null
 
     try {
+      // Get auth user directly for RLS compatibility
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('LoadSession - Auth user ID:', authUser?.id)
+
+      if (!authUser) {
+        state.value.error = 'You must be logged in'
+        state.value.loading = false
+        return { success: false }
+      }
+
       // Get session
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .select()
         .eq('id', sessionId)
-        .single()
+        .maybeSingle()
+
+      console.log('LoadSession - Session result:', { session, sessionError })
 
       if (sessionError || !session) {
         throw new Error('Session not found')
@@ -215,8 +274,10 @@ export function useSession() {
         .from('players')
         .select()
         .eq('session_id', sessionId)
-        .eq('user_id', user.value.id)
-        .single()
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+
+      console.log('LoadSession - Current player result:', { currentPlayer, playerError })
 
       if (playerError || !currentPlayer) {
         throw new Error('You are not part of this session')
@@ -229,7 +290,7 @@ export function useSession() {
         .select()
         .eq('session_id', sessionId)
         .eq('role', opponentRole)
-        .single()
+        .maybeSingle()
 
       // Get active game if exists
       const { data: game } = await supabase
@@ -239,7 +300,7 @@ export function useSession() {
         .eq('status', 'active')
         .order('game_number', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       state.value.session = {
         id: session.id,

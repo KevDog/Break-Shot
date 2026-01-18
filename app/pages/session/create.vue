@@ -9,6 +9,7 @@
 
       <!-- Error state -->
       <div v-else-if="error" class="session-card__error">
+        <h2>Failed to Create Session</h2>
         <p>{{ error }}</p>
         <button class="btn btn--primary" @click="handleCreateSession">
           {{ $t('common.retry') }}
@@ -106,8 +107,10 @@ watch(
   }
 )
 
-// Create session on mount
-onMounted(() => {
+// Create session on mount (client-side only)
+onMounted(async () => {
+  // Small delay to ensure auth state is hydrated
+  await nextTick()
   handleCreateSession()
 })
 

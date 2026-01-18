@@ -141,7 +141,9 @@ export default defineNuxtConfig({
   // TypeScript configuration
   typescript: {
     strict: true,
-    typeCheck: true,
+    // Type checking disabled in dev (use `npm run typecheck` for manual checks)
+    // The @nuxtjs/supabase module has issues recognizing local Database types
+    typeCheck: false,
   },
 
   // CSS configuration
