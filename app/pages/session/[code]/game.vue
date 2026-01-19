@@ -29,7 +29,10 @@
           <span class="player-score__name">{{ player1?.name || 'Player 1' }}</span>
           <span class="player-score__score">{{ player1DisplayScore }}</span>
           <div class="player-score__details">
-            <span v-if="player1State" class="player-score__rack">
+            <span v-if="player1State" class="player-score__rack-score">
+              Rack: {{ player1State.rackScore >= 0 ? '+' : '' }}{{ player1State.rackScore }}
+            </span>
+            <span v-if="player1State" class="player-score__run">
               {{ $t('game.run') }}: {{ player1State.currentRun }}
             </span>
             <span v-if="player1State && player1State.consecutiveFouls > 0" class="player-score__fouls">
@@ -56,7 +59,10 @@
           <span class="player-score__name">{{ player2?.name || 'Player 2' }}</span>
           <span class="player-score__score">{{ player2DisplayScore }}</span>
           <div class="player-score__details">
-            <span v-if="player2State" class="player-score__rack">
+            <span v-if="player2State" class="player-score__rack-score">
+              Rack: {{ player2State.rackScore >= 0 ? '+' : '' }}{{ player2State.rackScore }}
+            </span>
+            <span v-if="player2State" class="player-score__run">
               {{ $t('game.run') }}: {{ player2State.currentRun }}
             </span>
             <span v-if="player2State && player2State.consecutiveFouls > 0" class="player-score__fouls">
@@ -65,6 +71,12 @@
           </div>
         </div>
       </section>
+
+      <!-- Balls Remaining - Prominent display -->
+      <div class="balls-remaining" :class="{ 'balls-remaining--low': remainingBallsInRack <= 3, 'balls-remaining--empty': needsRerack }">
+        <span class="balls-remaining__count">{{ remainingBallsInRack }}</span>
+        <span class="balls-remaining__label">Balls Remaining</span>
+      </div>
 
       <!-- Consecutive foul warning -->
       <div
@@ -75,6 +87,37 @@
         {{ $t('warnings.consecutiveFouls', { count: consecutiveFouls }) }}
       </div>
 
+      <!-- Opening break foul option -->
+      <div v-if="awaitingFoulOption" class="foul-option">
+        <h3>Opening Break Foul</h3>
+        <p>{{ foulingPlayerName }} committed a foul on the opening break.</p>
+
+        <!-- Incoming player sees choice buttons -->
+        <template v-if="isIncomingPlayer">
+          <p class="foul-option__prompt">Choose your option:</p>
+          <div class="foul-option__actions">
+            <button class="btn btn--primary" @click="handleAcceptTable">
+              Accept Table
+            </button>
+            <button class="btn btn--secondary" @click="handleForceRebreak">
+              Force Rebreak
+            </button>
+          </div>
+        </template>
+
+        <!-- Fouling player sees waiting message -->
+        <template v-else>
+          <div class="foul-option__waiting">
+            <div class="waiting-indicator__dots">
+              <span />
+              <span />
+              <span />
+            </div>
+            <p>Waiting for {{ incomingPlayerName }} to decide...</p>
+          </div>
+        </template>
+      </div>
+
       <!-- Game completed banner -->
       <div v-if="gameState?.status === 'completed'" class="game-complete">
         <h2>{{ $t('gameEnd.title') }}</h2>
@@ -83,82 +126,111 @@
         </p>
         <div class="game-complete__actions">
           <button class="btn btn--primary" @click="handleRematch">
-            {{ $t('gameEnd.rematch') }}
+            New Game (Same Players)
           </button>
-          <button class="btn btn--secondary" @click="handleEndSession">
-            {{ $t('gameEnd.endSession') }}
+          <button class="btn btn--secondary" @click="handleNewOpponent">
+            New Game (New Opponent)
           </button>
         </div>
       </div>
 
+      <!-- Rerack required banner -->
+      <div v-if="needsRerack && gameState?.status === 'active'" class="rerack-required">
+        <h3>Rack Complete!</h3>
+        <p>14 balls have been pocketed. Press Rerack to continue.</p>
+        <button class="btn btn--primary btn--large" @click="handleRerack">
+          {{ $t('game.rerack') }}
+        </button>
+      </div>
+
       <!-- Scoring controls -->
-      <section v-if="gameState?.status === 'active'" class="scoring-controls">
+      <section v-if="gameState?.status === 'active' && !needsRerack && !awaitingFoulOption" class="scoring-controls">
         <!-- Turn indicator -->
-        <div class="turn-indicator">
-          {{ isPlayer1Turn ? player1?.name : player2?.name }}'s {{ $t('game.yourTurn').toLowerCase() }}
+        <div class="turn-indicator" :class="{ 'turn-indicator--waiting': !isMyTurn }">
+          <template v-if="isMyTurn">
+            {{ $t('game.yourTurn') }}
+          </template>
+          <template v-else>
+            {{ currentTurnPlayerName }}'s turn
+          </template>
         </div>
 
-        <!-- Ball count input -->
-        <div class="ball-input">
-          <button
-            class="ball-input__btn ball-input__btn--minus"
-            :disabled="ballCount <= 0"
-            @click="decrementBalls"
-          >
-            -
-          </button>
-          <span class="ball-input__count">{{ ballCount }}</span>
-          <button
-            class="ball-input__btn ball-input__btn--plus"
-            :disabled="ballCount >= 14"
-            @click="incrementBalls"
-          >
-            +
-          </button>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="action-buttons">
-          <button
-            class="btn btn--primary btn--large action-btn"
-            :disabled="ballCount === 0"
-            @click="handleScoreBalls"
-          >
-            {{ $t('game.ballsMade') }} ({{ ballCount }})
-          </button>
-
-          <div class="action-buttons__row">
+        <!-- Scoring controls only shown to the player whose turn it is -->
+        <template v-if="isMyTurn">
+          <!-- Ball count input -->
+          <div class="ball-input">
             <button
-              class="btn btn--secondary action-btn"
-              @click="handleFoul"
+              class="ball-input__btn ball-input__btn--minus"
+              :disabled="ballCount <= 0"
+              @click="decrementBalls"
             >
-              {{ $t('game.foul') }}
+              -
             </button>
+            <span class="ball-input__count">{{ ballCount }}</span>
             <button
-              class="btn btn--secondary action-btn"
-              @click="handleSafety"
+              class="ball-input__btn ball-input__btn--plus"
+              :disabled="ballCount >= remainingBallsInRack"
+              @click="incrementBalls"
             >
-              {{ $t('game.safety') }}
+              +
             </button>
           </div>
 
-          <div class="action-buttons__row">
+          <!-- Action buttons -->
+          <div class="action-buttons">
             <button
-              class="btn btn--secondary action-btn"
-              @click="handleMiss"
+              class="btn btn--primary btn--large action-btn"
+              :disabled="ballCount === 0 || ballCount > remainingBallsInRack"
+              @click="handleScoreBalls"
             >
-              {{ $t('game.endTurn') }}
+              {{ $t('game.ballsMade') }} ({{ ballCount }})
             </button>
-            <button
-              class="btn btn--secondary action-btn"
-              @click="handleRerack"
-            >
-              {{ $t('game.rerack') }}
-            </button>
-          </div>
-        </div>
 
-        <!-- Secondary actions -->
+            <div class="action-buttons__row">
+              <button
+                class="btn btn--secondary action-btn"
+                @click="handleFoul"
+              >
+                {{ $t('game.foul') }}
+              </button>
+              <button
+                class="btn btn--secondary action-btn"
+                @click="handleSafety"
+              >
+                {{ $t('game.safety') }}
+              </button>
+            </div>
+
+            <div class="action-buttons__row">
+              <button
+                class="btn btn--secondary action-btn"
+                @click="handleMiss"
+              >
+                Miss
+              </button>
+              <button
+                class="btn btn--secondary action-btn"
+                @click="handleRerack"
+              >
+                {{ $t('game.rerack') }}
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Waiting message for opponent's turn -->
+        <template v-else>
+          <div class="waiting-for-turn">
+            <div class="waiting-indicator__dots">
+              <span />
+              <span />
+              <span />
+            </div>
+            <p>Waiting for {{ currentTurnPlayerName }} to play...</p>
+          </div>
+        </template>
+
+        <!-- Secondary actions (always visible) -->
         <div class="secondary-actions">
           <button
             class="btn btn--ghost"
@@ -196,6 +268,9 @@ const route = useRoute()
 const { t } = useI18n()
 const supabase = useSupabaseClient()
 
+// Get current player from session to determine who the logged-in user is
+const { currentPlayer } = useSession()
+
 const {
   game,
   player1,
@@ -208,8 +283,10 @@ const {
   player1DisplayScore,
   player2DisplayScore,
   loadGame,
+  loadGameByCode,
   recordBallsMade,
   recordFoul,
+  recordFoulOption,
   recordSafety,
   recordEndTurn,
   recordRerack,
@@ -219,7 +296,7 @@ const {
   endGame,
 } = useGame()
 
-const ballCount = ref(1)
+const ballCount = ref(0)
 const showEndGameConfirm = ref(false)
 let unsubscribe: (() => void) | null = null
 
@@ -228,6 +305,17 @@ const isPlayer1Turn = computed(() => gameState.value?.currentTurn === 'player1')
 
 const currentPlayerId = computed(() => {
   return isPlayer1Turn.value ? player1.value?.id : player2.value?.id
+})
+
+// Check if it's the current logged-in user's turn
+const isMyTurn = computed(() => {
+  if (!currentPlayer.value || !currentPlayerId.value) return false
+  return currentPlayer.value.id === currentPlayerId.value
+})
+
+// Get the name of the player whose turn it is
+const currentTurnPlayerName = computed(() => {
+  return isPlayer1Turn.value ? player1.value?.name : player2.value?.name
 })
 
 const consecutiveFouls = computed(() => {
@@ -249,9 +337,35 @@ const winnerName = computed(() => {
   return ''
 })
 
+// Rack tracking computed properties
+const ballsInCurrentRack = computed(() => gameState.value?.ballsInCurrentRack || 0)
+const needsRerack = computed(() => gameState.value?.needsRerack || false)
+const remainingBallsInRack = computed(() => 14 - ballsInCurrentRack.value)
+
+// Foul option (opening break foul - incoming player chooses)
+const awaitingFoulOption = computed(() => gameState.value?.awaitingFoulOption || false)
+const foulingPlayerName = computed(() => {
+  if (!gameState.value?.foulingPlayer) return ''
+  return gameState.value.foulingPlayer === 'player1' ? player1.value?.name : player2.value?.name
+})
+const incomingPlayerId = computed(() => {
+  // The incoming player is the opponent of the fouling player
+  if (!gameState.value?.foulingPlayer) return null
+  return gameState.value.foulingPlayer === 'player1' ? player2.value?.id : player1.value?.id
+})
+const incomingPlayerName = computed(() => {
+  if (!gameState.value?.foulingPlayer) return ''
+  return gameState.value.foulingPlayer === 'player1' ? player2.value?.name : player1.value?.name
+})
+// Check if the current logged-in user is the incoming player (who makes the foul option choice)
+const isIncomingPlayer = computed(() => {
+  if (!currentPlayer.value || !incomingPlayerId.value) return false
+  return currentPlayer.value.id === incomingPlayerId.value
+})
+
 // Methods
 function incrementBalls() {
-  if (ballCount.value < 14) {
+  if (ballCount.value < remainingBallsInRack.value) {
     ballCount.value++
   }
 }
@@ -265,30 +379,42 @@ function decrementBalls() {
 async function handleScoreBalls() {
   if (!currentPlayerId.value || ballCount.value === 0) return
   await recordBallsMade(currentPlayerId.value, ballCount.value)
-  ballCount.value = 1
+  ballCount.value = 0
 }
 
 async function handleFoul() {
   if (!currentPlayerId.value) return
   await recordFoul(currentPlayerId.value)
-  ballCount.value = 1
+  ballCount.value = 0
 }
 
 async function handleSafety() {
   if (!currentPlayerId.value) return
   await recordSafety(currentPlayerId.value)
-  ballCount.value = 1
+  ballCount.value = 0
 }
 
 async function handleMiss() {
   if (!currentPlayerId.value) return
   await recordEndTurn(currentPlayerId.value)
-  ballCount.value = 1
+  ballCount.value = 0
 }
 
 async function handleRerack() {
   if (!currentPlayerId.value) return
   await recordRerack(currentPlayerId.value)
+  // Reset ball count to 1 after rerack (new rack has 14 balls available)
+  ballCount.value = 0
+}
+
+async function handleAcceptTable() {
+  if (!incomingPlayerId.value) return
+  await recordFoulOption(incomingPlayerId.value, 'accept_table')
+}
+
+async function handleForceRebreak() {
+  if (!incomingPlayerId.value) return
+  await recordFoulOption(incomingPlayerId.value, 'force_rebreak')
 }
 
 async function handleUndo() {
@@ -302,7 +428,8 @@ async function handleUndo() {
 
 async function handleConfirmEndGame() {
   showEndGameConfirm.value = false
-  await endGame('abandoned')
+  if (!currentPlayer.value) return
+  await endGame(currentPlayer.value.id, 'abandoned')
 }
 
 async function handleRematch() {
@@ -345,13 +472,27 @@ function handleEndSession() {
   navigateTo('/')
 }
 
+function handleNewOpponent() {
+  // Navigate to create a new session (will get a new join code for a new opponent)
+  navigateTo('/session/create')
+}
+
 // Initialize
 onMounted(async () => {
-  const sessionId = route.params.id as string
-  const result = await loadGame(sessionId)
+  const joinCode = route.params.code as string
+  const result = await loadGameByCode(joinCode)
 
   if (result.success && game.value) {
     unsubscribe = subscribeToGame(game.value.id)
+  }
+})
+
+// Watch for remaining balls changing and adjust ball count if needed
+watch(remainingBallsInRack, (newRemaining) => {
+  if (ballCount.value > newRemaining && newRemaining > 0) {
+    ballCount.value = newRemaining
+  } else if (newRemaining === 0) {
+    ballCount.value = 0
   }
 })
 
@@ -461,6 +602,15 @@ useHead({
   color: var(--color-text-muted);
 }
 
+.player-score__rack-score {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.player-score__run {
+  color: var(--color-text-muted);
+}
+
 .player-score__fouls {
   color: var(--color-warning);
 }
@@ -494,6 +644,75 @@ useHead({
   font-weight: var(--font-weight-semibold);
 }
 
+/* Foul option (opening break) */
+.foul-option {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-warning);
+}
+
+.foul-option h3 {
+  font-size: var(--font-size-xl);
+  color: var(--color-warning);
+  margin-bottom: var(--spacing-sm);
+}
+
+.foul-option p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.foul-option__prompt {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary) !important;
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+.foul-option__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.foul-option__actions .btn {
+  width: 100%;
+}
+
+.foul-option__waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) 0;
+}
+
+.foul-option__waiting p {
+  margin-bottom: 0;
+}
+
+.foul-option__waiting .waiting-indicator__dots {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.foul-option__waiting .waiting-indicator__dots span {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-warning);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.foul-option__waiting .waiting-indicator__dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.foul-option__waiting .waiting-indicator__dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
 /* Game complete */
 .game-complete {
   text-align: center;
@@ -523,6 +742,68 @@ useHead({
   width: 100%;
 }
 
+/* Rerack required banner */
+.rerack-required {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-accent);
+}
+
+.rerack-required h3 {
+  font-size: var(--font-size-xl);
+  color: var(--color-accent);
+  margin-bottom: var(--spacing-sm);
+}
+
+.rerack-required p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Balls Remaining - Prominent display */
+.balls-remaining {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-bg-elevated);
+}
+
+.balls-remaining__count {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.balls-remaining__label {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.balls-remaining--low {
+  border-color: var(--color-warning);
+}
+
+.balls-remaining--low .balls-remaining__count {
+  color: var(--color-warning);
+}
+
+.balls-remaining--empty {
+  border-color: var(--color-accent);
+  background-color: rgba(0, 212, 255, 0.1);
+}
+
+.balls-remaining--empty .balls-remaining__count {
+  color: var(--color-accent);
+}
+
 /* Scoring controls */
 .scoring-controls {
   display: flex;
@@ -535,6 +816,47 @@ useHead({
   font-size: var(--font-size-lg);
   color: var(--color-accent);
   font-weight: var(--font-weight-medium);
+}
+
+.turn-indicator--waiting {
+  color: var(--color-text-secondary);
+}
+
+/* Waiting for opponent's turn */
+.waiting-for-turn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.waiting-for-turn p {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.waiting-for-turn .waiting-indicator__dots {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.waiting-for-turn .waiting-indicator__dots span {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-accent);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.waiting-for-turn .waiting-indicator__dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.waiting-for-turn .waiting-indicator__dots span:nth-child(2) {
+  animation-delay: -0.16s;
 }
 
 /* Ball input */

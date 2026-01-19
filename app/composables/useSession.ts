@@ -240,8 +240,18 @@ export function useSession() {
     }
   }
 
-  // Load existing session
+  // Load existing session by ID
   async function loadSession(sessionId: string): Promise<{ success: boolean }> {
+    return loadSessionInternal({ type: 'id', value: sessionId })
+  }
+
+  // Load existing session by join code
+  async function loadSessionByCode(joinCode: string): Promise<{ success: boolean }> {
+    return loadSessionInternal({ type: 'code', value: joinCode.toLowerCase().trim() })
+  }
+
+  // Internal session loading logic
+  async function loadSessionInternal(lookup: { type: 'id' | 'code'; value: string }): Promise<{ success: boolean }> {
     state.value.loading = true
     state.value.error = null
 
@@ -256,12 +266,11 @@ export function useSession() {
         return { success: false }
       }
 
-      // Get session
-      const { data: session, error: sessionError } = await supabase
-        .from('sessions')
-        .select()
-        .eq('id', sessionId)
-        .maybeSingle()
+      // Get session by ID or join code
+      const query = supabase.from('sessions').select()
+      const { data: session, error: sessionError } = lookup.type === 'id'
+        ? await query.eq('id', lookup.value).maybeSingle()
+        : await query.eq('join_code', lookup.value).maybeSingle()
 
       console.log('LoadSession - Session result:', { session, sessionError })
 
@@ -269,7 +278,8 @@ export function useSession() {
         throw new Error('Session not found')
       }
 
-      // Get current player
+      // Get current player (use session.id for all downstream queries)
+      const sessionId = session.id
       const { data: currentPlayer, error: playerError } = await supabase
         .from('players')
         .select()
@@ -343,6 +353,14 @@ export function useSession() {
         }
       }
 
+      // Debug: Log isCreator computation values
+      console.log('LoadSession - isCreator check:', {
+        sessionCreatedBy: session.created_by,
+        authUserId: authUser.id,
+        composableUserId: user.value?.id,
+        isCreator: session.created_by === authUser.id,
+      })
+
       state.value.loading = false
       return { success: true }
     } catch (err) {
@@ -414,8 +432,17 @@ export function useSession() {
         (payload) => {
           if (payload.new) {
             const newPlayer = payload.new as Record<string, unknown>
-            // If this is the opponent joining
-            if (newPlayer.user_id !== user.value?.id) {
+            // Compare against currentPlayer.id instead of user.id to be more reliable
+            const isOwnRecord = newPlayer.id === state.value.currentPlayer?.id
+
+            console.log('Realtime player INSERT:', {
+              newPlayer,
+              isOwnRecord,
+              currentPlayerId: state.value.currentPlayer?.id,
+            })
+
+            // If this is the opponent joining (not our own record)
+            if (!isOwnRecord) {
               state.value.opponent = {
                 id: newPlayer.id as string,
                 sessionId: newPlayer.session_id as string,
@@ -438,10 +465,33 @@ export function useSession() {
         (payload) => {
           if (payload.new) {
             const updatedPlayer = payload.new as Record<string, unknown>
-            // Update opponent if it's their record
-            if (state.value.opponent && updatedPlayer.id === state.value.opponent.id) {
-              state.value.opponent.name = updatedPlayer.name as string
-              state.value.opponent.fargoRating = (updatedPlayer.fargo_rating as number) ?? undefined
+            // Compare against currentPlayer.id instead of user.id to be more reliable
+            const isOwnRecord = updatedPlayer.id === state.value.currentPlayer?.id
+
+            console.log('Realtime player UPDATE:', {
+              updatedPlayer,
+              isOwnRecord,
+              currentPlayerId: state.value.currentPlayer?.id,
+              updatedPlayerId: updatedPlayer.id,
+            })
+
+            // Only update opponent if it's NOT our own record
+            if (!isOwnRecord) {
+              // This is the opponent's record
+              if (state.value.opponent) {
+                state.value.opponent.name = updatedPlayer.name as string
+                state.value.opponent.fargoRating = (updatedPlayer.fargo_rating as number) ?? undefined
+                state.value.opponent.id = updatedPlayer.id as string
+              } else {
+                // Opponent wasn't set yet, create it
+                state.value.opponent = {
+                  id: updatedPlayer.id as string,
+                  sessionId: updatedPlayer.session_id as string,
+                  role: updatedPlayer.role as PlayerRole,
+                  name: updatedPlayer.name as string,
+                  fargoRating: (updatedPlayer.fargo_rating as number) ?? undefined,
+                }
+              }
             }
           }
         }
@@ -472,13 +522,16 @@ export function useSession() {
     error: computed(() => state.value.error),
 
     // Computed
-    isCreator: computed(() => state.value.session?.createdBy === user.value?.id),
+    // isCreator: The session creator is always player1, so we can use role to determine this
+    // This is more reliable than comparing user.value?.id which may be undefined during SSR/hydration
+    isCreator: computed(() => state.value.currentPlayer?.role === 'player1'),
     isPlayer1: computed(() => state.value.currentPlayer?.role === 'player1'),
 
     // Actions
     createSession,
     joinSession,
     loadSession,
+    loadSessionByCode,
     updatePlayer,
     subscribeToSession,
     clearSession,

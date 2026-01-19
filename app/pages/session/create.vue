@@ -102,7 +102,7 @@ watch(
   () => session.value?.status,
   (newStatus) => {
     if (newStatus === 'setup' && session.value) {
-      navigateTo(`/session/${session.value.id}/setup`)
+      navigateTo(`/session/${session.value.joinCode}/setup`)
     }
   }
 )

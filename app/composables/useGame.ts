@@ -6,6 +6,7 @@ import type {
   PlayerRole,
   GameEventType,
   BallsMadePayload,
+  FoulOptionChoice,
   Player,
 } from '~~/shared/types'
 import type { Database } from '~/types/database.types'
@@ -94,8 +95,38 @@ export function useGame() {
     return player2State.value ? getDisplayScore(player2State.value) : 0
   })
 
-  // Load game and events
+  // Load game and events by session ID
   async function loadGame(sessionId: string): Promise<{ success: boolean }> {
+    return loadGameInternal(sessionId)
+  }
+
+  // Load game and events by join code
+  async function loadGameByCode(joinCode: string): Promise<{ success: boolean }> {
+    state.value.loading = true
+    state.value.error = null
+
+    try {
+      // First look up the session by join code
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('join_code', joinCode.toLowerCase().trim())
+        .maybeSingle()
+
+      if (sessionError || !session) {
+        throw new Error('Session not found')
+      }
+
+      return loadGameInternal(session.id)
+    } catch (err) {
+      state.value.error = err instanceof Error ? err.message : 'Failed to load game'
+      state.value.loading = false
+      return { success: false }
+    }
+  }
+
+  // Internal game loading logic
+  async function loadGameInternal(sessionId: string): Promise<{ success: boolean }> {
     state.value.loading = true
     state.value.error = null
 
@@ -243,6 +274,7 @@ export function useGame() {
 
       return { success: true }
     } catch (err) {
+      console.error('Failed to record event:', err)
       state.value.error = err instanceof Error ? err.message : 'Failed to record event'
       return { success: false }
     }
@@ -271,6 +303,11 @@ export function useGame() {
   // Record rerack (new rack)
   async function recordRerack(playerId: string): Promise<{ success: boolean }> {
     return recordEvent(playerId, 'rerack', {})
+  }
+
+  // Record foul option (accept table or force rebreak after opening break foul)
+  async function recordFoulOption(playerId: string, choice: FoulOptionChoice): Promise<{ success: boolean }> {
+    return recordEvent(playerId, 'foul_option', { choice })
   }
 
   // Undo last action
@@ -349,14 +386,14 @@ export function useGame() {
   }
 
   // End game manually
-  async function endGame(reason: 'target_reached' | 'abandoned', winnerId?: string): Promise<{ success: boolean }> {
-    if (!state.value.game || !state.value.player1) {
+  async function endGame(playerId: string, reason: 'target_reached' | 'abandoned', winnerId?: string): Promise<{ success: boolean }> {
+    if (!state.value.game) {
       return { success: false }
     }
 
     try {
-      // Record game_end event
-      await recordEvent(state.value.player1.id, 'game_end', { reason, winnerId })
+      // Record game_end event with the player who initiated the end
+      await recordEvent(playerId, 'game_end', { reason, winnerId })
 
       // Update game status
       const { error } = await supabase
@@ -403,8 +440,10 @@ export function useGame() {
 
     // Actions
     loadGame,
+    loadGameByCode,
     recordBallsMade,
     recordFoul,
+    recordFoulOption,
     recordSafety,
     recordEndTurn,
     recordRerack,

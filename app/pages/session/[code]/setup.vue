@@ -24,22 +24,27 @@
           <h2 class="setup-section__title">Players</h2>
 
           <div class="players-grid">
-            <!-- Current player -->
-            <div class="player-setup">
-              <span class="player-setup__role">{{ isPlayer1 ? 'Player 1' : 'Player 2' }}</span>
+            <!-- Player 1 (always on left) -->
+            <div class="player-setup" :class="{ 'player-setup--editable': isPlayer1 }">
+              <span class="player-setup__role">Player 1</span>
               <div class="player-setup__field">
-                <label for="playerName">{{ $t('setup.playerName') }}</label>
+                <label :for="isPlayer1 ? 'playerName' : undefined">{{ $t('setup.playerName') }}</label>
                 <input
+                  v-if="isPlayer1"
                   id="playerName"
                   v-model="playerName"
                   type="text"
                   :placeholder="$t('setup.playerName')"
                   @blur="handleUpdatePlayer"
                 />
+                <div v-else class="player-setup__value">
+                  {{ player1Data?.name || $t('session.waiting') }}
+                </div>
               </div>
               <div class="player-setup__field">
-                <label for="fargoRating">{{ $t('setup.fargoRating') }}</label>
+                <label :for="isPlayer1 ? 'fargoRating' : undefined">{{ $t('setup.fargoRating') }}</label>
                 <input
+                  v-if="isPlayer1"
                   id="fargoRating"
                   v-model.number="fargoRating"
                   type="number"
@@ -48,22 +53,43 @@
                   :placeholder="$t('setup.fargoRating')"
                   @blur="handleUpdatePlayer"
                 />
+                <div v-else class="player-setup__value">
+                  {{ player1Data?.fargoRating || '-' }}
+                </div>
               </div>
             </div>
 
-            <!-- Opponent -->
-            <div class="player-setup player-setup--opponent">
-              <span class="player-setup__role">{{ isPlayer1 ? 'Player 2' : 'Player 1' }}</span>
+            <!-- Player 2 (always on right) -->
+            <div class="player-setup" :class="{ 'player-setup--editable': !isPlayer1 }">
+              <span class="player-setup__role">Player 2</span>
               <div class="player-setup__field">
-                <label>{{ $t('setup.playerName') }}</label>
-                <div class="player-setup__value">
-                  {{ opponent?.name || $t('session.waiting') }}
+                <label :for="!isPlayer1 ? 'playerName' : undefined">{{ $t('setup.playerName') }}</label>
+                <input
+                  v-if="!isPlayer1"
+                  id="playerName"
+                  v-model="playerName"
+                  type="text"
+                  :placeholder="$t('setup.playerName')"
+                  @blur="handleUpdatePlayer"
+                />
+                <div v-else class="player-setup__value">
+                  {{ player2Data?.name || $t('session.waiting') }}
                 </div>
               </div>
               <div class="player-setup__field">
-                <label>{{ $t('setup.fargoRating') }}</label>
-                <div class="player-setup__value">
-                  {{ opponent?.fargoRating || '-' }}
+                <label :for="!isPlayer1 ? 'fargoRating' : undefined">{{ $t('setup.fargoRating') }}</label>
+                <input
+                  v-if="!isPlayer1"
+                  id="fargoRating"
+                  v-model.number="fargoRating"
+                  type="number"
+                  min="100"
+                  max="900"
+                  :placeholder="$t('setup.fargoRating')"
+                  @blur="handleUpdatePlayer"
+                />
+                <div v-else class="player-setup__value">
+                  {{ player2Data?.fargoRating || '-' }}
                 </div>
               </div>
             </div>
@@ -92,16 +118,6 @@
                 <option value="player1">{{ player1Name }}</option>
                 <option value="player2">{{ player2Name }}</option>
               </select>
-            </div>
-
-            <div class="setting-field setting-field--full">
-              <label class="checkbox-label">
-                <input
-                  v-model="gameSettings.allowNegativeScore"
-                  type="checkbox"
-                />
-                <span>{{ $t('setup.allowNegative') }}</span>
-              </label>
             </div>
 
             <!-- Handicap settings -->
@@ -185,7 +201,7 @@ const {
   error,
   isCreator,
   isPlayer1,
-  loadSession,
+  loadSessionByCode,
   updatePlayer,
   subscribeToSession,
 } = useSession()
@@ -198,24 +214,37 @@ let unsubscribe: (() => void) | null = null
 const gameSettings = reactive({
   targetScore: 100,
   firstBreak: 'player1' as PlayerRole,
-  allowNegativeScore: true,
   player1Handicap: 0,
   player2Handicap: 0,
 })
 
-// Computed properties
-const player1Name = computed(() => {
+// Computed properties for player data by role (not by perspective)
+const player1Data = computed(() => {
   if (isPlayer1.value) {
-    return playerName.value || 'Player 1'
+    return {
+      name: playerName.value,
+      fargoRating: fargoRating.value,
+    }
   }
-  return opponent.value?.name || 'Player 1'
+  return opponent.value
+})
+
+const player2Data = computed(() => {
+  if (!isPlayer1.value) {
+    return {
+      name: playerName.value,
+      fargoRating: fargoRating.value,
+    }
+  }
+  return opponent.value
+})
+
+const player1Name = computed(() => {
+  return player1Data.value?.name || 'Player 1'
 })
 
 const player2Name = computed(() => {
-  if (!isPlayer1.value) {
-    return playerName.value || 'Player 2'
-  }
-  return opponent.value?.name || 'Player 2'
+  return player2Data.value?.name || 'Player 2'
 })
 
 const creatorName = computed(() => {
@@ -286,7 +315,7 @@ async function handleStartGame() {
         session_id: session.value.id,
         game_number: 1,
         target_score: gameSettings.targetScore,
-        allow_negative_score: gameSettings.allowNegativeScore,
+        allow_negative_score: true,
         first_break: gameSettings.firstBreak,
         player1_handicap: gameSettings.player1Handicap,
         player2_handicap: gameSettings.player2Handicap,
@@ -305,8 +334,8 @@ async function handleStartGame() {
 
     if (sessionError) throw sessionError
 
-    // Navigate to the game
-    navigateTo(`/session/${session.value.id}/game`)
+    // Navigate to the game using join code
+    navigateTo(`/session/${session.value.joinCode}/game`)
   } catch (err) {
     console.error('Failed to start game:', err)
   }
@@ -314,17 +343,27 @@ async function handleStartGame() {
 
 // Initialize
 onMounted(async () => {
-  const sessionId = route.params.id as string
+  const joinCode = route.params.code as string
 
-  const result = await loadSession(sessionId)
+  const result = await loadSessionByCode(joinCode)
 
-  if (result.success) {
+  if (result.success && session.value) {
     // Populate local state from loaded player
     playerName.value = currentPlayer.value?.name || ''
     fargoRating.value = currentPlayer.value?.fargoRating
 
-    // Subscribe to realtime updates
-    unsubscribe = subscribeToSession(sessionId)
+    // Debug: Log session and creator info
+    console.log('Setup page loaded:', {
+      joinCode,
+      session: session.value,
+      currentPlayer: currentPlayer.value,
+      opponent: opponent.value,
+      isCreator: isCreator.value,
+      isPlayer1: isPlayer1.value,
+    })
+
+    // Subscribe to realtime updates (use session ID for subscriptions)
+    unsubscribe = subscribeToSession(session.value.id)
   }
 
   pageLoading.value = false
@@ -335,7 +374,7 @@ watch(
   () => session.value?.status,
   (newStatus) => {
     if (newStatus === 'active' && session.value) {
-      navigateTo(`/session/${session.value.id}/game`)
+      navigateTo(`/session/${session.value.joinCode}/game`)
     }
   }
 )
@@ -444,6 +483,10 @@ useHead({
   padding: var(--spacing-md);
   background-color: var(--color-bg-elevated);
   border-radius: var(--radius-md);
+}
+
+.player-setup--editable {
+  border: 2px solid var(--color-accent);
 }
 
 .player-setup__role {

@@ -14,11 +14,14 @@ export type PlayerRole = 'player1' | 'player2'
 export type GameEventType =
   | 'balls_made'
   | 'foul'
+  | 'foul_option'
   | 'safety'
   | 'end_turn'
   | 'rerack'
   | 'undo'
   | 'game_end'
+
+export type FoulOptionChoice = 'accept_table' | 'force_rebreak'
 
 export type GameEndReason = 'target_reached' | 'abandoned'
 
@@ -82,6 +85,10 @@ export interface GameEndPayload {
   winnerId?: string
 }
 
+export interface FoulOptionPayload {
+  choice: FoulOptionChoice
+}
+
 // Empty payloads for events that don't need additional data
 export type EmptyPayload = Record<string, never>
 
@@ -93,6 +100,11 @@ export interface BallsMadeEvent extends GameEventBase {
 export interface FoulEvent extends GameEventBase {
   eventType: 'foul'
   payload: EmptyPayload
+}
+
+export interface FoulOptionEvent extends GameEventBase {
+  eventType: 'foul_option'
+  payload: FoulOptionPayload
 }
 
 export interface SafetyEvent extends GameEventBase {
@@ -123,6 +135,7 @@ export interface GameEndEvent extends GameEventBase {
 export type GameEvent =
   | BallsMadeEvent
   | FoulEvent
+  | FoulOptionEvent
   | SafetyEvent
   | EndTurnEvent
   | RerackEvent
@@ -138,6 +151,10 @@ export interface GameStateProjection {
   currentTurn: PlayerRole
   currentInning: number
   rerackCount: number
+  ballsInCurrentRack: number  // 0-14, tracks how many balls have been pocketed this rack
+  needsRerack: boolean        // True when 14 balls have been pocketed, waiting for rerack
+  awaitingFoulOption: boolean // True when awaiting incoming player's decision after opening break foul
+  foulingPlayer?: PlayerRole  // The player who committed the foul (for rebreak scenario)
   status: GameStatus
   winnerId?: string
   endedAt?: string

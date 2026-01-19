@@ -64,7 +64,7 @@ async function handleJoinSession() {
   const result = await joinSession(joinCode.value.trim())
 
   if (result.success && session.value) {
-    navigateTo(`/session/${session.value.id}/setup`)
+    navigateTo(`/session/${session.value.joinCode}/setup`)
   }
 }
 

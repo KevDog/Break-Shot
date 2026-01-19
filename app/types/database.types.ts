@@ -106,7 +106,7 @@ export interface Database {
           game_id: string
           player_id: string
           sequence_number: number
-          event_type: 'balls_made' | 'foul' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
+          event_type: 'balls_made' | 'foul' | 'foul_option' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
           payload: Json
           timestamp: string
           undone: boolean
@@ -116,7 +116,7 @@ export interface Database {
           game_id: string
           player_id: string
           sequence_number?: number
-          event_type: 'balls_made' | 'foul' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
+          event_type: 'balls_made' | 'foul' | 'foul_option' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
           payload?: Json
           timestamp?: string
           undone?: boolean
@@ -126,7 +126,7 @@ export interface Database {
           game_id?: string
           player_id?: string
           sequence_number?: number
-          event_type?: 'balls_made' | 'foul' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
+          event_type?: 'balls_made' | 'foul' | 'foul_option' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
           payload?: Json
           timestamp?: string
           undone?: boolean
@@ -143,7 +143,7 @@ export interface Database {
       session_status: 'waiting' | 'setup' | 'active' | 'completed' | 'abandoned'
       game_status: 'active' | 'completed' | 'abandoned'
       player_role: 'player1' | 'player2'
-      event_type: 'balls_made' | 'foul' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
+      event_type: 'balls_made' | 'foul' | 'foul_option' | 'safety' | 'end_turn' | 'rerack' | 'undo' | 'game_end'
     }
   }
 }

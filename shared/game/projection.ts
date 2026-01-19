@@ -8,6 +8,7 @@ import type {
   GameStateProjection,
   PlayerStateProjection,
   PlayerRole,
+  FoulOptionChoice,
 } from '../types'
 
 interface ProjectionInput {
@@ -48,6 +49,10 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
     currentTurn: game.firstBreak,
     currentInning: 1,
     rerackCount: 0,
+    ballsInCurrentRack: 0,  // Start with 0 balls pocketed in rack
+    needsRerack: false,     // Will be true when 14 balls are pocketed
+    awaitingFoulOption: false, // True when waiting for incoming player's decision after opening break foul
+    foulingPlayer: undefined,
     status: game.status,
     winnerId: undefined,
     endedAt: undefined,
@@ -75,6 +80,10 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
     consecutiveFouls: 0,
     totalFouls: 0,
   }
+
+  // Track whether the opening break is complete
+  // Opening break ends after any: balls_made, safety, end_turn (miss), or foul_option response
+  let openingBreakComplete = false
 
   // Build set of undone event IDs first
   const undoneEventIds = new Set<string>()
@@ -120,17 +129,6 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
     gameState.currentTurn = gameState.currentTurn === 'player1' ? 'player2' : 'player1'
   }
 
-  // Helper to apply score floor
-  const applyScoreFloor = (state: PlayerStateProjection): void => {
-    if (!game.allowNegativeScore) {
-      const displayScore = state.totalScore + state.rackScore
-      if (displayScore < 0) {
-        // Adjust rackScore to bring display score to 0
-        state.rackScore = -state.totalScore
-      }
-    }
-  }
-
   // Process events in sequence order
   const sortedEvents = [...events].sort((a, b) => a.sequenceNumber - b.sequenceNumber)
 
@@ -163,6 +161,14 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
           playerState.rackScore += count
           playerState.currentRun += count
 
+          // Track balls pocketed in current rack
+          gameState.ballsInCurrentRack += count
+
+          // Check if rack is complete (14 balls pocketed)
+          if (gameState.ballsInCurrentRack >= 14) {
+            gameState.needsRerack = true
+          }
+
           // Reset consecutive fouls on legal shot
           playerState.consecutiveFouls = 0
 
@@ -179,28 +185,60 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
             gameState.endedAt = event.timestamp
           }
         }
+        // Opening break is complete after any balls are made
+        openingBreakComplete = true
         break
       }
 
       case 'foul': {
-        if (playerState) {
-          // Deduct 1 point
-          playerState.rackScore -= 1
+        if (playerState && playerRole) {
+          // Opening break foul deducts 2 points, regular foul deducts 1 point
+          const isOpeningBreak = !openingBreakComplete
+          const foulPenalty = isOpeningBreak ? 2 : 1
+          // Foul points are deducted from total score, not rack score
+          playerState.totalScore -= foulPenalty
           playerState.consecutiveFouls++
           playerState.totalFouls++
 
           // Three consecutive fouls = additional 15 point penalty
           if (playerState.consecutiveFouls === 3) {
-            playerState.rackScore -= 15
+            playerState.totalScore -= 15
             playerState.consecutiveFouls = 0
           }
 
-          // Apply score floor
-          applyScoreFloor(playerState)
-
-          // End turn
-          switchTurn()
+          // On opening break foul, incoming player gets to choose
+          if (isOpeningBreak) {
+            gameState.awaitingFoulOption = true
+            gameState.foulingPlayer = playerRole
+            // Don't switch turn yet - wait for foul_option event
+          } else {
+            // Regular foul - just end turn
+            switchTurn()
+          }
         }
+        break
+      }
+
+      case 'foul_option': {
+        // Incoming player's response to opening break foul
+        const choice = event.payload.choice as FoulOptionChoice
+        gameState.awaitingFoulOption = false
+
+        if (choice === 'accept_table') {
+          // Incoming player accepts the table - switch turn to them
+          switchTurn()
+        } else if (choice === 'force_rebreak') {
+          // Force the fouling player to rerack and break again
+          // Reset rack state but keep the fouling player's turn
+          gameState.ballsInCurrentRack = 0
+          // Note: The -2 point penalty remains, fouling player breaks again
+          // Turn stays with fouling player (no switchTurn)
+          // Opening break is NOT complete - they must break again
+          break
+        }
+        // Opening break is complete after foul option is resolved (accept_table)
+        openingBreakComplete = true
+        gameState.foulingPlayer = undefined
         break
       }
 
@@ -211,11 +249,19 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
           // Reset consecutive fouls on legal shot
           playerState.consecutiveFouls = 0
         }
+        // Opening break is complete after a safety
+        openingBreakComplete = true
         switchTurn()
         break
       }
 
       case 'end_turn': {
+        // Miss is a legal shot - reset consecutive fouls
+        if (playerState) {
+          playerState.consecutiveFouls = 0
+        }
+        // Opening break is complete after a miss
+        openingBreakComplete = true
         switchTurn()
         break
       }
@@ -227,6 +273,9 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
         player2State.totalScore += player2State.rackScore
         player2State.rackScore = 0
 
+        // Reset rack tracking for new rack
+        gameState.ballsInCurrentRack = 0
+        gameState.needsRerack = false
         gameState.rerackCount++
         break
       }
