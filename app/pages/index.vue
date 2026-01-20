@@ -8,9 +8,12 @@
         <NuxtLink to="/session/create" class="btn btn--primary btn--large w-full no-underline">
           {{ $t('session.create') }}
         </NuxtLink>
-        <NuxtLink to="/session/join" class="btn btn--secondary btn--large w-full no-underline">
-          {{ $t('session.join') }}
-        </NuxtLink>
+        
+        
+        <!-- Error message -->
+        <div v-if="error" class="alert alert--error">
+          {{ error }}
+        </div>
       </div>
     </div>
 
@@ -32,6 +35,8 @@
 
 <script setup lang="ts">
 import type { ConnectionStatus } from '~~/shared/types'
+
+const { t } = useI18n()
 
 // Connection status (will be implemented with Supabase realtime)
 const connectionStatus = ref<ConnectionStatus>('connected')
