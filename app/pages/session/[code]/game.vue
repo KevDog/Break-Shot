@@ -20,7 +20,7 @@
       <section class="grid grid-cols-[1fr_auto_1fr] gap-4 bg-bg-secondary rounded-2xl p-6 ring-1 ring-white/10 max-sm:grid-cols-2 max-sm:grid-rows-[auto_auto]">
         <!-- Player 1 -->
         <div
-          class="flex flex-col items-center gap-1 p-4 rounded-xl transition-all duration-100"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-100"
           :class="{
             'bg-bg-elevated ring-2 ring-accent': gameState?.currentTurn === 'player1',
             'bg-success/10 ring-2 ring-success': gameState?.winnerId === player1?.id,
@@ -29,11 +29,18 @@
           <span class="text-sm/6 font-medium" :class="gameState?.currentTurn === 'player1' ? 'text-accent' : 'text-text-secondary'">
             {{ player1?.name || 'Player 1' }}
           </span>
-          <span class="text-4xl font-bold leading-none">{{ player1DisplayScore }}</span>
+          <div class="flex items-baseline gap-3">
+            <div class="flex flex-col items-center">
+              <span class="text-4xl font-bold leading-none">{{ player1State?.totalScore || 0 }}</span>
+              <span class="text-xs text-text-muted">Total</span>
+            </div>
+            <span class="text-2xl text-text-muted">+</span>
+            <div class="flex flex-col items-center">
+              <span class="text-4xl font-bold leading-none text-accent">{{ player1State?.rackScore || 0 }}</span>
+              <span class="text-xs text-text-muted">Rack</span>
+            </div>
+          </div>
           <div class="flex flex-col items-center gap-0.5 text-xs text-text-muted">
-            <span v-if="player1State" class="text-accent font-medium">
-              Rack: {{ player1State.rackScore >= 0 ? '+' : '' }}{{ player1State.rackScore }}
-            </span>
             <span v-if="player1State">
               {{ $t('game.run') }}: {{ player1State.currentRun }}
             </span>
@@ -52,7 +59,7 @@
 
         <!-- Player 2 -->
         <div
-          class="flex flex-col items-center gap-1 p-4 rounded-xl transition-all duration-100"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-100"
           :class="{
             'bg-bg-elevated ring-2 ring-accent': gameState?.currentTurn === 'player2',
             'bg-success/10 ring-2 ring-success': gameState?.winnerId === player2?.id,
@@ -61,11 +68,18 @@
           <span class="text-sm/6 font-medium" :class="gameState?.currentTurn === 'player2' ? 'text-accent' : 'text-text-secondary'">
             {{ player2?.name || 'Player 2' }}
           </span>
-          <span class="text-4xl font-bold leading-none max-sm:text-3xl">{{ player2DisplayScore }}</span>
+          <div class="flex items-baseline gap-3">
+            <div class="flex flex-col items-center">
+              <span class="text-4xl font-bold leading-none max-sm:text-3xl">{{ player2State?.totalScore || 0 }}</span>
+              <span class="text-xs text-text-muted">Total</span>
+            </div>
+            <span class="text-2xl text-text-muted">+</span>
+            <div class="flex flex-col items-center">
+              <span class="text-4xl font-bold leading-none max-sm:text-3xl text-accent">{{ player2State?.rackScore || 0 }}</span>
+              <span class="text-xs text-text-muted">Rack</span>
+            </div>
+          </div>
           <div class="flex flex-col items-center gap-0.5 text-xs text-text-muted">
-            <span v-if="player2State" class="text-accent font-medium">
-              Rack: {{ player2State.rackScore >= 0 ? '+' : '' }}{{ player2State.rackScore }}
-            </span>
             <span v-if="player2State">
               {{ $t('game.run') }}: {{ player2State.currentRun }}
             </span>
@@ -406,18 +420,30 @@ async function handleScoreBalls() {
 
 async function handleFoul() {
   if (!currentPlayerId.value) return
+  // Record any balls made before the foul (scenario 4)
+  if (ballCount.value > 0) {
+    await recordBallsMade(currentPlayerId.value, ballCount.value)
+  }
   await recordFoul(currentPlayerId.value)
   ballCount.value = 0
 }
 
 async function handleSafety() {
   if (!currentPlayerId.value) return
+  // Record any balls made before the safety (scenario 5)
+  if (ballCount.value > 0) {
+    await recordBallsMade(currentPlayerId.value, ballCount.value)
+  }
   await recordSafety(currentPlayerId.value)
   ballCount.value = 0
 }
 
 async function handleMiss() {
   if (!currentPlayerId.value) return
+  // Record any balls made before the miss
+  if (ballCount.value > 0) {
+    await recordBallsMade(currentPlayerId.value, ballCount.value)
+  }
   await recordEndTurn(currentPlayerId.value)
   ballCount.value = 0
 }

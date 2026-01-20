@@ -8,7 +8,9 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -27,7 +29,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.3.4",
     "typescript": "^5.9.3",
+    "vitest": "^4.0.17",
     "vue-tsc": "^3.2.2"
   }
 }

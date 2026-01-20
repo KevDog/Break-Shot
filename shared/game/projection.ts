@@ -161,7 +161,7 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
 
     switch (event.eventType) {
       case 'balls_made': {
-        const count = event.payload.count
+        const count = Number(event.payload.count) || 0
 
         // Track balls pocketed in current rack (always update, regardless of player state)
         gameState.ballsInCurrentRack += count
