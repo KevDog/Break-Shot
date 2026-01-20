@@ -1,22 +1,22 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-card auth-card--confirm">
-      <div v-if="loading" class="auth-confirm__loading">
+  <main class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-sm bg-bg-secondary rounded-2xl p-6 sm:p-8 ring-1 ring-white/10 text-center">
+      <div v-if="loading" class="flex flex-col items-center gap-4">
         <div class="spinner" />
-        <p>{{ $t('auth.confirmingAuth') }}</p>
+        <p class="text-sm/6 text-text-secondary">{{ $t('auth.confirmingAuth') }}</p>
       </div>
 
-      <div v-else-if="error" class="auth-confirm__error">
-        <h2>{{ $t('auth.authFailed') }}</h2>
-        <p>{{ error }}</p>
+      <div v-else-if="error" class="flex flex-col items-center gap-4">
+        <h2 class="text-xl font-semibold text-error">{{ $t('auth.authFailed') }}</h2>
+        <p class="text-sm/6 text-text-secondary mb-4">{{ error }}</p>
         <NuxtLink to="/auth/login" class="btn btn--primary">
           {{ $t('auth.backToLogin') }}
         </NuxtLink>
       </div>
 
-      <div v-else class="auth-confirm__success">
-        <h2>{{ $t('auth.authSuccess') }}</h2>
-        <p>{{ $t('auth.redirecting') }}</p>
+      <div v-else class="flex flex-col items-center gap-4">
+        <h2 class="text-xl font-semibold text-success">{{ $t('auth.authSuccess') }}</h2>
+        <p class="text-sm/6 text-text-secondary">{{ $t('auth.redirecting') }}</p>
       </div>
     </div>
   </main>
@@ -97,64 +97,3 @@ useHead({
   title: t('auth.confirming') + ' - Break Shot',
 })
 </script>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-}
-
-.auth-card--confirm {
-  width: 100%;
-  max-width: 400px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-  text-align: center;
-}
-
-.auth-confirm__loading,
-.auth-confirm__error,
-.auth-confirm__success {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.auth-confirm__loading p,
-.auth-confirm__success p {
-  color: var(--color-text-secondary);
-}
-
-.auth-confirm__error h2 {
-  color: var(--color-error);
-}
-
-.auth-confirm__error p {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-md);
-}
-
-.auth-confirm__success h2 {
-  color: var(--color-success);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-bg-elevated);
-  border-top-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>

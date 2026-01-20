@@ -1,14 +1,5 @@
 <template>
-  <div class="layout-default">
+  <div class="min-h-screen min-h-dvh flex flex-col">
     <slot />
   </div>
 </template>
-
-<style scoped>
-.layout-default {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-</style>

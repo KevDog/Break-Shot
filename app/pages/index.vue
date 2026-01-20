@@ -1,20 +1,20 @@
 <template>
-  <main class="landing">
-    <div class="landing__content">
-      <h1 class="landing__title">{{ $t('app.name') }}</h1>
-      <p class="landing__subtitle">{{ $t('app.description') }}</p>
+  <main class="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 text-center">
+    <div class="max-w-sm w-full">
+      <h1 class="text-3xl font-bold mb-2">{{ $t('app.name') }}</h1>
+      <p class="text-lg text-text-secondary mb-12">{{ $t('app.description') }}</p>
 
-      <div class="landing__actions">
-        <NuxtLink to="/session/create" class="btn btn--primary btn--large">
+      <div class="flex flex-col gap-4">
+        <NuxtLink to="/session/create" class="btn btn--primary btn--large w-full no-underline">
           {{ $t('session.create') }}
         </NuxtLink>
-        <NuxtLink to="/session/join" class="btn btn--secondary btn--large">
+        <NuxtLink to="/session/join" class="btn btn--secondary btn--large w-full no-underline">
           {{ $t('session.join') }}
         </NuxtLink>
       </div>
     </div>
 
-    <div class="landing__status">
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-bg-secondary rounded-full ring-1 ring-white/10 text-sm/6 text-text-secondary">
       <span
         class="status-indicator"
         :class="{
@@ -23,7 +23,7 @@
           'status-indicator--reconnecting': connectionStatus === 'reconnecting',
         }"
       />
-      <span class="landing__status-text">
+      <span class="capitalize">
         {{ $t(`status.${connectionStatus === 'connected' ? 'online' : connectionStatus === 'disconnected' ? 'offline' : 'reconnecting'}`) }}
       </span>
     </div>
@@ -45,61 +45,3 @@ useHead({
   title: 'Break Shot - 14.1 Straight Pool Scoring',
 })
 </script>
-
-<style scoped>
-.landing {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: var(--spacing-lg);
-  text-align: center;
-}
-
-.landing__content {
-  max-width: 400px;
-  width: 100%;
-}
-
-.landing__title {
-  font-size: var(--font-size-3xl);
-  margin-bottom: var(--spacing-sm);
-}
-
-.landing__subtitle {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-2xl);
-}
-
-.landing__actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.landing__actions .btn {
-  width: 100%;
-  text-decoration: none;
-}
-
-.landing__status {
-  position: fixed;
-  bottom: var(--spacing-lg);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.landing__status-text {
-  text-transform: capitalize;
-}
-</style>

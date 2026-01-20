@@ -1,17 +1,17 @@
 <template>
-  <main class="session-page">
-    <div class="session-card">
-      <h1 class="session-card__title">{{ $t('session.join') }}</h1>
-      <p class="session-card__subtitle">{{ $t('session.enterCode') }}</p>
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-sm bg-bg-secondary rounded-2xl p-6 sm:p-8 ring-1 ring-white/10">
+      <h1 class="text-2xl font-semibold text-center mb-1">{{ $t('session.join') }}</h1>
+      <p class="text-sm/6 text-text-secondary text-center mb-8">{{ $t('session.enterCode') }}</p>
 
       <!-- Error message -->
-      <div v-if="error" class="session-card__error">
+      <div v-if="error" class="alert alert--error mb-6">
         {{ error }}
       </div>
 
       <!-- Join form -->
-      <form class="join-form" @submit.prevent="handleJoinSession">
-        <div class="join-form__field">
+      <form class="space-y-4" @submit.prevent="handleJoinSession">
+        <div>
           <label for="joinCode" class="visually-hidden">{{ $t('session.joinCode') }}</label>
           <input
             id="joinCode"
@@ -22,7 +22,7 @@
             autocomplete="off"
             autocapitalize="off"
             :disabled="loading"
-            class="join-form__input"
+            class="text-center text-xl font-mono tracking-wider"
           />
         </div>
 
@@ -36,8 +36,8 @@
       </form>
 
       <!-- Back link -->
-      <div class="session-card__links">
-        <NuxtLink to="/" class="session-card__link">
+      <div class="flex justify-center mt-6 text-sm">
+        <NuxtLink to="/" class="text-text-secondary hover:text-accent no-underline">
           {{ $t('common.back') }}
         </NuxtLink>
       </div>
@@ -78,77 +78,3 @@ useHead({
   title: t('session.join') + ' - Break Shot',
 })
 </script>
-
-<style scoped>
-.session-page {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-}
-
-.session-card {
-  width: 100%;
-  max-width: 400px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-}
-
-.session-card__title {
-  font-size: var(--font-size-2xl);
-  text-align: center;
-  margin-bottom: var(--spacing-xs);
-}
-
-.session-card__subtitle {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.session-card__error {
-  background-color: rgba(255, 68, 68, 0.1);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-}
-
-.join-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.join-form__input {
-  width: 100%;
-  text-align: center;
-  font-size: var(--font-size-xl);
-  font-family: var(--font-mono);
-  letter-spacing: 0.05em;
-}
-
-.btn--full {
-  width: 100%;
-}
-
-.session-card__links {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--spacing-lg);
-}
-
-.session-card__link {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.session-card__link:hover {
-  color: var(--color-accent);
-}
-</style>

@@ -1,7 +1,13 @@
+import tailwindcss from '@tailwindcss/vite'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 
   modules: [
     '@nuxtjs/supabase',
@@ -134,6 +140,9 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', href: '/icons/icon-192x192.png' },
+        // Inter font for Tailwind Plus styling
+        { rel: 'preconnect', href: 'https://rsms.me/' },
+        { rel: 'stylesheet', href: 'https://rsms.me/inter/inter.css' },
       ],
     },
   },

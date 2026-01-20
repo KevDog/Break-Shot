@@ -1,21 +1,21 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-card">
-      <h1 class="auth-card__title">{{ $t('auth.createAccount') }}</h1>
-      <p class="auth-card__subtitle">{{ $t('auth.signUpToContinue') }}</p>
+  <main class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-sm bg-bg-secondary rounded-2xl p-6 sm:p-8 ring-1 ring-white/10">
+      <h1 class="text-2xl font-semibold text-center mb-1">{{ $t('auth.createAccount') }}</h1>
+      <p class="text-sm/6 text-text-secondary text-center mb-8">{{ $t('auth.signUpToContinue') }}</p>
 
       <!-- Error message -->
-      <div v-if="error" class="auth-card__error">
+      <div v-if="error" class="alert alert--error mb-6">
         {{ error }}
       </div>
 
       <!-- Success message -->
-      <div v-if="success" class="auth-card__success">
+      <div v-if="success" class="alert alert--success mb-6 text-center">
         {{ $t('auth.checkEmail') }}
       </div>
 
       <!-- Social signup buttons -->
-      <div v-if="!success" class="auth-card__providers">
+      <div v-if="!success" class="flex flex-col gap-3">
         <button
           class="btn btn--social btn--google"
           :disabled="loading"
@@ -47,20 +47,20 @@
           @click="signUpWithFacebook"
         >
           <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            <path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
           </svg>
           <span>{{ $t('auth.continueWithFacebook') }}</span>
         </button>
       </div>
 
       <!-- Divider -->
-      <div v-if="!success" class="auth-card__divider">
+      <div v-if="!success" class="divider-text">
         <span>{{ $t('auth.or') }}</span>
       </div>
 
       <!-- Email signup form -->
-      <form v-if="!success" class="auth-form" @submit.prevent="signUpWithEmail">
-        <div class="auth-form__field">
+      <form v-if="!success" class="space-y-4" @submit.prevent="signUpWithEmail">
+        <div>
           <label for="email" class="visually-hidden">{{ $t('auth.email') }}</label>
           <input
             id="email"
@@ -73,7 +73,7 @@
           />
         </div>
 
-        <div class="auth-form__field">
+        <div>
           <label for="password" class="visually-hidden">{{ $t('auth.password') }}</label>
           <input
             id="password"
@@ -87,7 +87,7 @@
           />
         </div>
 
-        <div class="auth-form__field">
+        <div>
           <label for="confirmPassword" class="visually-hidden">{{ $t('auth.confirmPassword') }}</label>
           <input
             id="confirmPassword"
@@ -107,8 +107,8 @@
       </form>
 
       <!-- Links -->
-      <div class="auth-card__links">
-        <NuxtLink to="/auth/login" class="auth-card__link">
+      <div class="flex flex-col items-center gap-2 mt-6 text-sm">
+        <NuxtLink to="/auth/login" class="text-text-secondary hover:text-accent no-underline">
           {{ $t('auth.alreadyHaveAccount') }}
         </NuxtLink>
       </div>
@@ -127,7 +127,6 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const success = ref(false)
 
-// Redirect URL for OAuth (computed on client-side only)
 const redirectTo = computed(() => {
   if (import.meta.client) {
     return `${window.location.origin}/auth/confirm`
@@ -181,7 +180,6 @@ async function signUpWithFacebook() {
 }
 
 async function signUpWithEmail() {
-  // Validate passwords match
   if (password.value !== confirmPassword.value) {
     error.value = t('auth.passwordsMustMatch')
     return
@@ -207,7 +205,6 @@ async function signUpWithEmail() {
   }
 }
 
-// Page meta
 definePageMeta({
   layout: 'default',
 })
@@ -216,160 +213,3 @@ useHead({
   title: t('auth.signUp') + ' - Break Shot',
 })
 </script>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-}
-
-.auth-card__title {
-  font-size: var(--font-size-2xl);
-  text-align: center;
-  margin-bottom: var(--spacing-xs);
-}
-
-.auth-card__subtitle {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.auth-card__error {
-  background-color: rgba(255, 68, 68, 0.1);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-}
-
-.auth-card__success {
-  background-color: rgba(0, 255, 136, 0.1);
-  border: 1px solid var(--color-success);
-  color: var(--color-success);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-  text-align: center;
-}
-
-.auth-card__providers {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.btn--social {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  min-height: var(--button-height);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  transition: all var(--transition-fast);
-}
-
-.btn--google {
-  background-color: #ffffff;
-  color: #1f1f1f;
-}
-
-.btn--google:hover:not(:disabled) {
-  background-color: #f5f5f5;
-}
-
-.btn--apple {
-  background-color: #000000;
-  color: #ffffff;
-  border: 1px solid var(--color-bg-elevated);
-}
-
-.btn--apple:hover:not(:disabled) {
-  background-color: #1a1a1a;
-}
-
-.btn--facebook {
-  background-color: #1877F2;
-  color: #ffffff;
-}
-
-.btn--facebook:hover:not(:disabled) {
-  background-color: #166fe5;
-}
-
-.btn__icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.auth-card__divider {
-  display: flex;
-  align-items: center;
-  margin: var(--spacing-lg) 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.auth-card__divider::before,
-.auth-card__divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background-color: var(--color-bg-elevated);
-}
-
-.auth-card__divider span {
-  padding: 0 var(--spacing-md);
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.auth-form__field input {
-  width: 100%;
-}
-
-.btn--full {
-  width: 100%;
-}
-
-.auth-card__links {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-lg);
-}
-
-.auth-card__link {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.auth-card__link:hover {
-  color: var(--color-accent);
-}
-</style>

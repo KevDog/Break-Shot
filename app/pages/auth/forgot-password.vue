@@ -1,22 +1,22 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-card">
-      <h1 class="auth-card__title">{{ $t('auth.resetPassword') }}</h1>
-      <p class="auth-card__subtitle">{{ $t('auth.resetPasswordInstructions') }}</p>
+  <main class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-sm bg-bg-secondary rounded-2xl p-6 sm:p-8 ring-1 ring-white/10">
+      <h1 class="text-2xl font-semibold text-center mb-1">{{ $t('auth.resetPassword') }}</h1>
+      <p class="text-sm/6 text-text-secondary text-center mb-8">{{ $t('auth.resetPasswordInstructions') }}</p>
 
       <!-- Error message -->
-      <div v-if="error" class="auth-card__error">
+      <div v-if="error" class="alert alert--error mb-6">
         {{ error }}
       </div>
 
       <!-- Success message -->
-      <div v-if="success" class="auth-card__success">
+      <div v-if="success" class="alert alert--success mb-6 text-center">
         {{ $t('auth.resetEmailSent') }}
       </div>
 
       <!-- Reset form -->
-      <form v-if="!success" class="auth-form" @submit.prevent="resetPassword">
-        <div class="auth-form__field">
+      <form v-if="!success" class="space-y-4" @submit.prevent="resetPassword">
+        <div>
           <label for="email" class="visually-hidden">{{ $t('auth.email') }}</label>
           <input
             id="email"
@@ -35,8 +35,8 @@
       </form>
 
       <!-- Links -->
-      <div class="auth-card__links">
-        <NuxtLink to="/auth/login" class="auth-card__link">
+      <div class="flex flex-col items-center gap-2 mt-6 text-sm">
+        <NuxtLink to="/auth/login" class="text-text-secondary hover:text-accent no-underline">
           {{ $t('auth.backToLogin') }}
         </NuxtLink>
       </div>
@@ -79,86 +79,3 @@ useHead({
   title: t('auth.resetPassword') + ' - Break Shot',
 })
 </script>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-}
-
-.auth-card__title {
-  font-size: var(--font-size-2xl);
-  text-align: center;
-  margin-bottom: var(--spacing-xs);
-}
-
-.auth-card__subtitle {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.auth-card__error {
-  background-color: rgba(255, 68, 68, 0.1);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-}
-
-.auth-card__success {
-  background-color: rgba(0, 255, 136, 0.1);
-  border: 1px solid var(--color-success);
-  color: var(--color-success);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-  text-align: center;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.auth-form__field input {
-  width: 100%;
-}
-
-.btn--full {
-  width: 100%;
-}
-
-.auth-card__links {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-lg);
-}
-
-.auth-card__link {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.auth-card__link:hover {
-  color: var(--color-accent);
-}
-</style>
