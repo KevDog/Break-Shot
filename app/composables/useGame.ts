@@ -44,6 +44,9 @@ export function useGame() {
     return computeProjection({
       game: state.value.game,
       events: state.value.events,
+      // Pass actual player IDs so projection can correctly map events to players
+      player1Id: state.value.player1?.id,
+      player2Id: state.value.player2?.id,
     })
   })
 
@@ -53,16 +56,12 @@ export function useGame() {
 
   const player1State = computed((): PlayerStateProjection | null => {
     if (!projection.value || !state.value.player1) return null
-    const p1State = projection.value.player1State
-    p1State.playerId = state.value.player1.id
-    return p1State
+    return projection.value.player1State
   })
 
   const player2State = computed((): PlayerStateProjection | null => {
     if (!projection.value || !state.value.player2) return null
-    const p2State = projection.value.player2State
-    p2State.playerId = state.value.player2.id
-    return p2State
+    return projection.value.player2State
   })
 
   // Determine current player's role

@@ -338,6 +338,7 @@ const currentTurnPlayerName = computed(() => {
   return isPlayer1Turn.value ? player1.value?.name : player2.value?.name
 })
 
+// Get consecutive fouls for the player whose turn it currently is
 const consecutiveFouls = computed(() => {
   if (isPlayer1Turn.value) {
     return player1State.value?.consecutiveFouls || 0
@@ -345,7 +346,8 @@ const consecutiveFouls = computed(() => {
   return player2State.value?.consecutiveFouls || 0
 })
 
-const showFoulWarning = computed(() => consecutiveFouls.value >= 1)
+// Only show foul warning at 2 consecutive fouls (3rd foul = 15 point penalty)
+const showFoulWarning = computed(() => consecutiveFouls.value >= 2)
 
 const canUndoPlayer1 = computed(() => player1.value ? checkCanUndo(player1.value.id) : false)
 const canUndoPlayer2 = computed(() => player2.value ? checkCanUndo(player2.value.id) : false)

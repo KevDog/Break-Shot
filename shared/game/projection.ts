@@ -14,6 +14,8 @@ import type {
 interface ProjectionInput {
   game: Game
   events: GameEvent[]
+  player1Id?: string  // Database player ID for player1 role
+  player2Id?: string  // Database player ID for player2 role
 }
 
 interface ProjectionOutput {
@@ -41,7 +43,7 @@ interface ProjectionOutput {
  * 4. Display score = totalScore + rackScore
  */
 export function computeProjection(input: ProjectionInput): ProjectionOutput {
-  const { game, events } = input
+  const { game, events, player1Id, player2Id } = input
 
   // Initialize game state
   const gameState: GameStateProjection = {
@@ -59,8 +61,9 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
   }
 
   // Initialize player states with handicaps
+  // Use provided player IDs if available, otherwise will be set from events
   const player1State: PlayerStateProjection = {
-    playerId: '', // Will be set when we know player IDs
+    playerId: player1Id || '',
     gameId: game.id,
     totalScore: game.player1Handicap,
     rackScore: 0,
@@ -71,7 +74,7 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
   }
 
   const player2State: PlayerStateProjection = {
-    playerId: '',
+    playerId: player2Id || '',
     gameId: game.id,
     totalScore: game.player2Handicap,
     rackScore: 0,
@@ -138,36 +141,40 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
       continue
     }
 
-    // Set player IDs on first encounter
-    const role = event.playerId === player1State.playerId ? 'player1' :
-                 event.playerId === player2State.playerId ? 'player2' : null
+    // Determine player role from player ID
+    // If player IDs were provided upfront, use those
+    // Otherwise fall back to event-based assignment for backwards compatibility
+    let playerRole = getPlayerRole(event.playerId)
 
-    if (role === null && event.eventType !== 'game_end') {
-      // First time seeing this player, assign based on events seen so far
+    if (playerRole === null && event.eventType !== 'game_end') {
+      // Player ID not recognized - try to assign based on event order (legacy behavior)
       if (!player1State.playerId) {
         player1State.playerId = event.playerId
+        playerRole = 'player1'
       } else if (!player2State.playerId && event.playerId !== player1State.playerId) {
         player2State.playerId = event.playerId
+        playerRole = 'player2'
       }
     }
 
-    const playerRole = getPlayerRole(event.playerId)
     const playerState = playerRole ? getPlayerState(playerRole) : null
 
     switch (event.eventType) {
       case 'balls_made': {
+        const count = event.payload.count
+
+        // Track balls pocketed in current rack (always update, regardless of player state)
+        gameState.ballsInCurrentRack += count
+
+        // Check if rack is complete (14 balls pocketed)
+        if (gameState.ballsInCurrentRack >= 14) {
+          gameState.needsRerack = true
+        }
+
+        // Update player-specific stats if we can identify the player
         if (playerState) {
-          const count = event.payload.count
           playerState.rackScore += count
           playerState.currentRun += count
-
-          // Track balls pocketed in current rack
-          gameState.ballsInCurrentRack += count
-
-          // Check if rack is complete (14 balls pocketed)
-          if (gameState.ballsInCurrentRack >= 14) {
-            gameState.needsRerack = true
-          }
 
           // Reset consecutive fouls on legal shot
           playerState.consecutiveFouls = 0
