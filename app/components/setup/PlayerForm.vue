@@ -19,23 +19,6 @@
         {{ playerData?.name || $t('session.waiting') }}
       </div>
     </div>
-    <div class="flex flex-col gap-1">
-      <label :for="isCurrentPlayer ? `${playerLabel.toLowerCase().replace(' ', '')}-rating` : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.fargoRating') }}</label>
-      <input
-        v-if="isCurrentPlayer"
-        :id="`${playerLabel.toLowerCase().replace(' ', '')}-rating`"
-        :value="fargoRating"
-        type="number"
-        min="100"
-        max="900"
-        :placeholder="$t('setup.fargoRating')"
-        @blur="$emit('update-player')"
-        @input="$emit('update:fargo-rating', parseInt(($event.target as HTMLInputElement).value) || undefined)"
-      />
-      <div v-else class="px-3 py-2 bg-bg-secondary rounded-lg text-sm/6 text-text-secondary min-h-[42px] flex items-center">
-        {{ playerData?.fargoRating || '-' }}
-      </div>
-    </div>
   </div>
 </template>
 
@@ -45,14 +28,12 @@ import type { Player } from '~~/shared/types'
 interface Props {
   playerLabel: string
   playerName: string
-  fargoRating?: number
   playerData?: Player | null
   isCurrentPlayer: boolean
 }
 
 interface Emits {
   'update:player-name': [value: string]
-  'update:fargo-rating': [value: number | undefined]
   'update-player': []
 }
 

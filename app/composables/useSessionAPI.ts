@@ -76,7 +76,6 @@ export function useSessionAPI() {
         sessionId: player.session_id,
         role: player.role as PlayerRole,
         name: player.name,
-        fargoRating: player.fargo_rating ?? undefined,
       })
 
       setLoading(false)
@@ -177,7 +176,6 @@ export function useSessionAPI() {
         sessionId: player.session_id,
         role: player.role as PlayerRole,
         name: player.name,
-        fargoRating: player.fargo_rating ?? undefined,
       })
 
       setLoading(false)
@@ -257,7 +255,6 @@ export function useSessionAPI() {
         sessionId: player.session_id,
         role: player.role as PlayerRole,
         name: player.name,
-        fargoRating: player.fargo_rating ?? undefined,
       })
 
       if (opponentData) {
@@ -266,7 +263,6 @@ export function useSessionAPI() {
           sessionId: opponentData.session_id,
           role: opponentData.role as PlayerRole,
           name: opponentData.name,
-          fargoRating: opponentData.fargo_rating ?? undefined,
         })
       }
 
@@ -287,7 +283,7 @@ export function useSessionAPI() {
   }
 
   // Update current player
-  async function updatePlayer(updates: { name?: string; fargoRating?: number }): Promise<void> {
+  async function updatePlayer(updates: { name?: string }): Promise<void> {
     if (!currentPlayer.value) return
 
     try {
@@ -295,7 +291,6 @@ export function useSessionAPI() {
         .from('players')
         .update({
           name: updates.name || currentPlayer.value.name,
-          fargo_rating: updates.fargoRating,
         })
         .eq('id', currentPlayer.value.id)
 
@@ -305,7 +300,6 @@ export function useSessionAPI() {
       setCurrentPlayer({
         ...currentPlayer.value,
         name: updates.name || currentPlayer.value.name,
-        fargoRating: updates.fargoRating,
       })
     } catch (err) {
       console.error('Update player error:', err)

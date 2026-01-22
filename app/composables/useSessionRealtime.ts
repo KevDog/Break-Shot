@@ -34,7 +34,6 @@ export function useSessionRealtime() {
               sessionId: updatedPlayer.session_id,
               role: updatedPlayer.role as PlayerRole,
               name: updatedPlayer.name,
-              fargoRating: updatedPlayer.fargo_rating ?? undefined,
             })
           }
         }
