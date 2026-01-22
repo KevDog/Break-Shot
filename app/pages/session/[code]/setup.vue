@@ -27,21 +27,25 @@
             <!-- Player 1 (always on left) -->
             <PlayerForm
               player-label="Player 1"
-              v-model:player-name="playerName"
-              v-model:fargo-rating="fargoRating"
+              :player-name="isPlayer1 ? playerName : ''"
+              :fargo-rating="isPlayer1 ? fargoRating : undefined"
               :player-data="player1Data"
               :is-current-player="isPlayer1"
               @update-player="handleUpdatePlayer"
+              @update:player-name="isPlayer1 && (playerName = $event)"
+              @update:fargo-rating="isPlayer1 && (fargoRating = $event)"
             />
 
             <!-- Player 2 (always on right) -->
             <PlayerForm
               player-label="Player 2"
-              v-model:player-name="playerName"
-              v-model:fargo-rating="fargoRating"
+              :player-name="!isPlayer1 ? playerName : ''"
+              :fargo-rating="!isPlayer1 ? fargoRating : undefined"
               :player-data="player2Data"
               :is-current-player="!isPlayer1"
               @update-player="handleUpdatePlayer"
+              @update:player-name="!isPlayer1 && (playerName = $event)"
+              @update:fargo-rating="!isPlayer1 && (fargoRating = $event)"
             />
           </div>
 

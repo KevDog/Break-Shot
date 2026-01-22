@@ -129,6 +129,8 @@ Uncertainty:
 
 ❓ clarify: [specific question]
 Examples
+Bad: Let me also check what happens during session creation to see if the join code is being saved correctly
+Good: ✓ — verify join code saved on session creation
 
 User: Is Python good for web scraping? Bad: Python is an excellent choice for web scraping! It has many powerful libraries like BeautifulSoup, Scrapy, and Selenium that make it easy to extract data from websites. The syntax is clean and readable, which makes it great for beginners and experts alike. Good: ✓ — bs4, scrapy, selenium
 

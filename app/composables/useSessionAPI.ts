@@ -35,6 +35,7 @@ export function useSessionAPI() {
       }
 
       // Create session
+      console.log('Creating session with join code:', joinCode)
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -45,6 +46,7 @@ export function useSessionAPI() {
         .select()
         .single()
 
+      console.log('Session creation result:', { sessionData, sessionError })
       if (sessionError) throw sessionError
 
       // Create player 1 record
@@ -110,13 +112,18 @@ export function useSessionAPI() {
       }
 
       // Find session
+      const normalizedCode = joinCode.toLowerCase().trim()
+      console.log('Looking for session with join code:', normalizedCode)
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select('*')
-        .eq('join_code', joinCode.toUpperCase())
+        .eq('join_code', normalizedCode)
         .single()
 
+      console.log('Session query result:', { sessionData, sessionError })
+
       if (sessionError || !sessionData) {
+        console.error('Session not found - Error:', sessionError)
         throw new Error('Session not found')
       }
 
@@ -145,6 +152,16 @@ export function useSessionAPI() {
 
         if (playerError) throw playerError
         player = newPlayer
+
+        // Update session status to 'setup' when player 2 joins
+        const { error: updateError } = await supabase
+          .from('sessions')
+          .update({ status: 'setup' })
+          .eq('id', sessionData.id)
+
+        if (updateError) {
+          console.error('Failed to update session status:', updateError)
+        }
       }
 
       setSession({
@@ -196,10 +213,11 @@ export function useSessionAPI() {
       }
 
       // Get session
+      const normalizedCode = joinCode.toLowerCase().trim()
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select('*')
-        .eq('join_code', joinCode.toUpperCase())
+        .eq('join_code', normalizedCode)
         .single()
 
       if (sessionError || !sessionData) {

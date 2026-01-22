@@ -9,6 +9,21 @@
           {{ $t('session.create') }}
         </NuxtLink>
         
+        <!-- Join game form (input only, no button) -->
+        <div>
+          <label for="joinCode" class="visually-hidden">{{ $t('session.joinCode') }}</label>
+          <input
+            id="joinCode"
+            v-model="joinCode"
+            type="text"
+            :placeholder="$t('session.joinCode')"
+            autocomplete="off"
+            autocapitalize="off"
+            :disabled="loading"
+            class="text-center text-xl font-mono tracking-wider"
+            @keyup.enter="handleJoinSession"
+          />
+        </div>
         
         <!-- Error message -->
         <div v-if="error" class="alert alert--error">
@@ -37,9 +52,27 @@
 import type { ConnectionStatus } from '~~/shared/types'
 
 const { t } = useI18n()
+const {
+  session,
+  loading,
+  error,
+  joinSession,
+} = useSession()
 
 // Connection status (will be implemented with Supabase realtime)
 const connectionStatus = ref<ConnectionStatus>('connected')
+
+const joinCode = ref('')
+
+async function handleJoinSession() {
+  if (!joinCode.value.trim()) return
+
+  const result = await joinSession(joinCode.value.trim())
+
+  if (result.success && session.value) {
+    navigateTo(`/session/${session.value.joinCode}/setup`)
+  }
+}
 
 // Page meta
 definePageMeta({

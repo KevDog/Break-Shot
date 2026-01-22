@@ -5,10 +5,10 @@
   >
     <span class="text-xs font-semibold text-accent uppercase tracking-wide">{{ playerLabel }}</span>
     <div class="flex flex-col gap-1">
-      <label :for="isCurrentPlayer ? 'playerName' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.playerName') }}</label>
+      <label :for="isCurrentPlayer ? `${playerLabel.toLowerCase().replace(' ', '')}-name` : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.playerName') }}</label>
       <input
         v-if="isCurrentPlayer"
-        id="playerName"
+        :id="`${playerLabel.toLowerCase().replace(' ', '')}-name`"
         :value="playerName"
         type="text"
         :placeholder="$t('setup.playerName')"
@@ -20,10 +20,10 @@
       </div>
     </div>
     <div class="flex flex-col gap-1">
-      <label :for="isCurrentPlayer ? 'fargoRating' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.fargoRating') }}</label>
+      <label :for="isCurrentPlayer ? `${playerLabel.toLowerCase().replace(' ', '')}-rating` : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.fargoRating') }}</label>
       <input
         v-if="isCurrentPlayer"
-        id="fargoRating"
+        :id="`${playerLabel.toLowerCase().replace(' ', '')}-rating`"
         :value="fargoRating"
         type="number"
         min="100"
