@@ -42,7 +42,6 @@ export interface Player {
   sessionId: string
   role: PlayerRole
   name: string
-  fargoRating?: number
 }
 
 export interface Game {
@@ -205,7 +204,6 @@ export interface JoinSessionResponse {
 
 export interface UpdatePlayerRequest {
   name: string
-  fargoRating?: number
 }
 
 export interface GameSetupRequest {

@@ -28,24 +28,20 @@
             <PlayerForm
               player-label="Player 1"
               :player-name="isPlayer1 ? playerName : ''"
-              :fargo-rating="isPlayer1 ? fargoRating : undefined"
               :player-data="player1Data"
               :is-current-player="isPlayer1"
               @update-player="handleUpdatePlayer"
               @update:player-name="isPlayer1 && (playerName = $event)"
-              @update:fargo-rating="isPlayer1 && (fargoRating = $event)"
             />
 
             <!-- Player 2 (always on right) -->
             <PlayerForm
               player-label="Player 2"
               :player-name="!isPlayer1 ? playerName : ''"
-              :fargo-rating="!isPlayer1 ? fargoRating : undefined"
               :player-data="player2Data"
               :is-current-player="!isPlayer1"
               @update-player="handleUpdatePlayer"
               @update:player-name="!isPlayer1 && (playerName = $event)"
-              @update:fargo-rating="!isPlayer1 && (fargoRating = $event)"
             />
           </div>
 
@@ -62,19 +58,60 @@
         </section>
 
         <!-- Game settings (only shown to session creator) -->
-        <GameConfiguration
-          :is-creator="isCreator"
-          v-model:target-score="gameSettings.targetScore"
-          v-model:first-break="gameSettings.firstBreak"
-          :player1-name="player1Name"
-          :player2-name="player2Name"
-          :show-handicap-section="showHandicapSection"
-          :recommended-handicap="recommendedHandicap"
-          :recommended-handicap-display="recommendedHandicapDisplay"
-          v-model:player1-handicap="gameSettings.player1Handicap"
-          v-model:player2-handicap="gameSettings.player2Handicap"
-          @apply-recommended-handicap="applyRecommendedHandicap"
-        />
+        <section v-if="isCreator" class="flex flex-col gap-4">
+          <h2 class="text-lg font-semibold pb-2 border-b border-white/10">Game Settings</h2>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label for="targetScore" class="text-sm/6 text-text-secondary">{{ $t('setup.targetScore') }}</label>
+              <select id="targetScore" v-model.number="gameSettings.targetScore">
+                <option :value="50">50</option>
+                <option :value="75">75</option>
+                <option :value="100">100</option>
+                <option :value="125">125</option>
+                <option :value="150">150</option>
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label for="firstBreak" class="text-sm/6 text-text-secondary">{{ $t('setup.firstBreak') }}</label>
+              <select id="firstBreak" v-model="gameSettings.firstBreak">
+                <option value="player1">{{ player1Name }}</option>
+                <option value="player2">{{ player2Name }}</option>
+              </select>
+            </div>
+
+            <!-- Manual handicap settings -->
+            <div class="col-span-2 flex flex-col gap-1">
+              <h3 class="text-base font-medium mb-2">Handicap (Optional)</h3>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                  <label for="player1Handicap" class="text-sm/6 text-text-secondary">{{ player1Name }} starts at</label>
+                  <input
+                    id="player1Handicap"
+                    v-model.number="gameSettings.player1Handicap"
+                    type="number"
+                    min="-50"
+                    max="50"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label for="player2Handicap" class="text-sm/6 text-text-secondary">{{ player2Name }} starts at</label>
+                  <input
+                    id="player2Handicap"
+                    v-model.number="gameSettings.player2Handicap"
+                    type="number"
+                    min="-50"
+                    max="50"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- Waiting for creator to start (non-creator view) -->
         <section v-if="!isCreator" class="flex flex-col gap-4">
@@ -105,9 +142,7 @@
 
 <script setup lang="ts">
 import type { PlayerRole } from '~~/shared/types'
-import { calculateRecommendedHandicap } from '~~/shared/game/projection'
 import PlayerForm from '~/components/setup/PlayerForm.vue'
-import GameConfiguration from '~/components/setup/GameConfiguration.vue'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -128,7 +163,6 @@ const {
 
 const pageLoading = ref(true)
 const playerName = ref('')
-const fargoRating = ref<number | undefined>(undefined)
 let unsubscribe: (() => void) | null = null
 
 const gameSettings = reactive({
@@ -143,7 +177,6 @@ const player1Data = computed(() => {
   if (isPlayer1.value) {
     return {
       name: playerName.value,
-      fargoRating: fargoRating.value,
     }
   }
   return opponent.value
@@ -153,7 +186,6 @@ const player2Data = computed(() => {
   if (!isPlayer1.value) {
     return {
       name: playerName.value,
-      fargoRating: fargoRating.value,
     }
   }
   return opponent.value
@@ -174,32 +206,6 @@ const creatorName = computed(() => {
   return opponent.value?.name || 'Host'
 })
 
-const showHandicapSection = computed(() => {
-  const player1Rating = isPlayer1.value ? fargoRating.value : opponent.value?.fargoRating
-  const player2Rating = isPlayer1.value ? opponent.value?.fargoRating : fargoRating.value
-  return player1Rating && player2Rating
-})
-
-const recommendedHandicap = computed(() => {
-  const player1Rating = isPlayer1.value ? fargoRating.value : opponent.value?.fargoRating
-  const player2Rating = isPlayer1.value ? opponent.value?.fargoRating : fargoRating.value
-
-  if (player1Rating && player2Rating) {
-    return calculateRecommendedHandicap(player1Rating, player2Rating, gameSettings.targetScore)
-  }
-  return null
-})
-
-const recommendedHandicapDisplay = computed(() => {
-  if (!recommendedHandicap.value) return ''
-  const { player1Handicap, player2Handicap } = recommendedHandicap.value
-  if (player1Handicap > 0) {
-    return `${player1Name.value} +${player1Handicap}`
-  } else if (player2Handicap > 0) {
-    return `${player2Name.value} +${player2Handicap}`
-  }
-  return 'Even'
-})
 
 const canStartGame = computed(() => {
   return (
@@ -213,7 +219,6 @@ const canStartGame = computed(() => {
 async function handleUpdatePlayer() {
   await updatePlayer({
     name: playerName.value,
-    fargoRating: fargoRating.value,
   })
 }
 
@@ -224,12 +229,6 @@ async function handlePlayerReady() {
   // Could add additional "ready" status logic here if needed
 }
 
-function applyRecommendedHandicap() {
-  if (recommendedHandicap.value) {
-    gameSettings.player1Handicap = recommendedHandicap.value.player1Handicap
-    gameSettings.player2Handicap = recommendedHandicap.value.player2Handicap
-  }
-}
 
 async function handleStartGame() {
   if (!session.value || !canStartGame.value) return
@@ -277,7 +276,6 @@ onMounted(async () => {
   if (result.success && session.value) {
     // Populate local state from loaded player
     playerName.value = currentPlayer.value?.name || ''
-    fargoRating.value = currentPlayer.value?.fargoRating
 
     // Debug: Log session and creator info
     console.log('Setup page loaded:', {
