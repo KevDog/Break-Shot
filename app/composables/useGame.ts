@@ -258,7 +258,7 @@ export function useGame() {
         payload: (event.payload || {}) as Record<string, unknown>,
       } as GameEvent
 
-      state.value.events.push(newEvent)
+      state.value.events = [...state.value.events, newEvent]
 
       // Check for game end condition
       if (gameState.value?.status === 'completed' && state.value.game) {
@@ -357,8 +357,7 @@ export function useGame() {
               payload: (e.payload || {}) as Record<string, unknown>,
             } as GameEvent
 
-            state.value.events.push(newEvent)
-            state.value.events.sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+            state.value.events = [...state.value.events, newEvent].sort((a, b) => a.sequenceNumber - b.sequenceNumber)
           }
         }
       )

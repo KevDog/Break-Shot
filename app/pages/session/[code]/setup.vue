@@ -25,144 +25,56 @@
 
           <div class="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
             <!-- Player 1 (always on left) -->
-            <div
-              class="flex flex-col gap-3 p-4 bg-bg-elevated rounded-xl ring-1 ring-white/5"
-              :class="{ 'ring-2 ring-accent': isPlayer1 }"
-            >
-              <span class="text-xs font-semibold text-accent uppercase tracking-wide">Player 1</span>
-              <div class="flex flex-col gap-1">
-                <label :for="isPlayer1 ? 'playerName' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.playerName') }}</label>
-                <input
-                  v-if="isPlayer1"
-                  id="playerName"
-                  v-model="playerName"
-                  type="text"
-                  :placeholder="$t('setup.playerName')"
-                  @blur="handleUpdatePlayer"
-                />
-                <div v-else class="px-3 py-2 bg-bg-secondary rounded-lg text-sm/6 text-text-secondary min-h-[42px] flex items-center">
-                  {{ player1Data?.name || $t('session.waiting') }}
-                </div>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label :for="isPlayer1 ? 'fargoRating' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.fargoRating') }}</label>
-                <input
-                  v-if="isPlayer1"
-                  id="fargoRating"
-                  v-model.number="fargoRating"
-                  type="number"
-                  min="100"
-                  max="900"
-                  :placeholder="$t('setup.fargoRating')"
-                  @blur="handleUpdatePlayer"
-                />
-                <div v-else class="px-3 py-2 bg-bg-secondary rounded-lg text-sm/6 text-text-secondary min-h-[42px] flex items-center">
-                  {{ player1Data?.fargoRating || '-' }}
-                </div>
-              </div>
-            </div>
+            <PlayerForm
+              player-label="Player 1"
+              :player-name="isPlayer1 ? playerName : ''"
+              :fargo-rating="isPlayer1 ? fargoRating : undefined"
+              :player-data="player1Data"
+              :is-current-player="isPlayer1"
+              @update-player="handleUpdatePlayer"
+              @update:player-name="isPlayer1 && (playerName = $event)"
+              @update:fargo-rating="isPlayer1 && (fargoRating = $event)"
+            />
 
             <!-- Player 2 (always on right) -->
-            <div
-              class="flex flex-col gap-3 p-4 bg-bg-elevated rounded-xl ring-1 ring-white/5"
-              :class="{ 'ring-2 ring-accent': !isPlayer1 }"
+            <PlayerForm
+              player-label="Player 2"
+              :player-name="!isPlayer1 ? playerName : ''"
+              :fargo-rating="!isPlayer1 ? fargoRating : undefined"
+              :player-data="player2Data"
+              :is-current-player="!isPlayer1"
+              @update-player="handleUpdatePlayer"
+              @update:player-name="!isPlayer1 && (playerName = $event)"
+              @update:fargo-rating="!isPlayer1 && (fargoRating = $event)"
+            />
+          </div>
+
+          <!-- Player 2 ready button -->
+          <div v-if="!isPlayer1 && !isCreator" class="flex justify-center">
+            <button
+              class="btn btn--primary"
+              :disabled="!playerName.trim()"
+              @click="handlePlayerReady"
             >
-              <span class="text-xs font-semibold text-accent uppercase tracking-wide">Player 2</span>
-              <div class="flex flex-col gap-1">
-                <label :for="!isPlayer1 ? 'playerName' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.playerName') }}</label>
-                <input
-                  v-if="!isPlayer1"
-                  id="playerName"
-                  v-model="playerName"
-                  type="text"
-                  :placeholder="$t('setup.playerName')"
-                  @blur="handleUpdatePlayer"
-                />
-                <div v-else class="px-3 py-2 bg-bg-secondary rounded-lg text-sm/6 text-text-secondary min-h-[42px] flex items-center">
-                  {{ player2Data?.name || $t('session.waiting') }}
-                </div>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label :for="!isPlayer1 ? 'fargoRating' : undefined" class="text-sm/6 text-text-secondary">{{ $t('setup.fargoRating') }}</label>
-                <input
-                  v-if="!isPlayer1"
-                  id="fargoRating"
-                  v-model.number="fargoRating"
-                  type="number"
-                  min="100"
-                  max="900"
-                  :placeholder="$t('setup.fargoRating')"
-                  @blur="handleUpdatePlayer"
-                />
-                <div v-else class="px-3 py-2 bg-bg-secondary rounded-lg text-sm/6 text-text-secondary min-h-[42px] flex items-center">
-                  {{ player2Data?.fargoRating || '-' }}
-                </div>
-              </div>
-            </div>
+              {{ $t('setup.ready') }}
+            </button>
           </div>
         </section>
 
         <!-- Game settings (only shown to session creator) -->
-        <section v-if="isCreator" class="flex flex-col gap-4">
-          <h2 class="text-lg font-semibold pb-2 border-b border-white/10">Game Settings</h2>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label for="targetScore" class="text-sm/6 text-text-secondary">{{ $t('setup.targetScore') }}</label>
-              <select id="targetScore" v-model.number="gameSettings.targetScore">
-                <option :value="50">50</option>
-                <option :value="75">75</option>
-                <option :value="100">100</option>
-                <option :value="125">125</option>
-                <option :value="150">150</option>
-              </select>
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label for="firstBreak" class="text-sm/6 text-text-secondary">{{ $t('setup.firstBreak') }}</label>
-              <select id="firstBreak" v-model="gameSettings.firstBreak">
-                <option value="player1">{{ player1Name }}</option>
-                <option value="player2">{{ player2Name }}</option>
-              </select>
-            </div>
-
-            <!-- Handicap settings -->
-            <div v-if="showHandicapSection" class="col-span-2 flex flex-col gap-1">
-              <h3 class="text-base font-medium mb-2">{{ $t('setup.handicap') }}</h3>
-
-              <div v-if="recommendedHandicap" class="flex items-center gap-2 p-3 px-4 bg-bg-elevated rounded-xl ring-1 ring-white/5 text-sm/6 mb-4">
-                <span>{{ $t('setup.recommendedHandicap') }}:</span>
-                <strong class="text-accent">{{ recommendedHandicapDisplay }}</strong>
-                <button class="btn btn--sm btn--secondary" @click="applyRecommendedHandicap">
-                  Apply
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1">
-                  <label for="player1Handicap" class="text-sm/6 text-text-secondary">{{ player1Name }} starts at</label>
-                  <input
-                    id="player1Handicap"
-                    v-model.number="gameSettings.player1Handicap"
-                    type="number"
-                    min="-50"
-                    max="50"
-                  />
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label for="player2Handicap" class="text-sm/6 text-text-secondary">{{ player2Name }} starts at</label>
-                  <input
-                    id="player2Handicap"
-                    v-model.number="gameSettings.player2Handicap"
-                    type="number"
-                    min="-50"
-                    max="50"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <GameConfiguration
+          :is-creator="isCreator"
+          v-model:target-score="gameSettings.targetScore"
+          v-model:first-break="gameSettings.firstBreak"
+          :player1-name="player1Name"
+          :player2-name="player2Name"
+          :show-handicap-section="showHandicapSection"
+          :recommended-handicap="recommendedHandicap"
+          :recommended-handicap-display="recommendedHandicapDisplay"
+          v-model:player1-handicap="gameSettings.player1Handicap"
+          v-model:player2-handicap="gameSettings.player2Handicap"
+          @apply-recommended-handicap="applyRecommendedHandicap"
+        />
 
         <!-- Waiting for creator to start (non-creator view) -->
         <section v-if="!isCreator" class="flex flex-col gap-4">
@@ -194,6 +106,8 @@
 <script setup lang="ts">
 import type { PlayerRole } from '~~/shared/types'
 import { calculateRecommendedHandicap } from '~~/shared/game/projection'
+import PlayerForm from '~/components/setup/PlayerForm.vue'
+import GameConfiguration from '~/components/setup/GameConfiguration.vue'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -303,6 +217,13 @@ async function handleUpdatePlayer() {
   })
 }
 
+async function handlePlayerReady() {
+  if (!playerName.value.trim()) return
+  
+  await handleUpdatePlayer()
+  // Could add additional "ready" status logic here if needed
+}
+
 function applyRecommendedHandicap() {
   if (recommendedHandicap.value) {
     gameSettings.player1Handicap = recommendedHandicap.value.player1Handicap
@@ -373,6 +294,14 @@ onMounted(async () => {
   }
 
   pageLoading.value = false
+})
+
+// Auto-focus player name field
+nextTick(() => {
+  const playerNameInput = document.getElementById('playerName')
+  if (playerNameInput) {
+    playerNameInput.focus()
+  }
 })
 
 // Watch for session becoming active (game started)
