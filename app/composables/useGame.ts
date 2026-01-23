@@ -268,7 +268,13 @@ export function useGame() {
           .update({ status: 'completed' })
           .eq('id', state.value.game.id)
 
-        state.value.game.status = 'completed'
+        state.value = {
+          ...state.value,
+          game: {
+            ...state.value.game,
+            status: 'completed'
+          }
+        }
       }
 
       return { success: true }
@@ -360,7 +366,11 @@ export function useGame() {
             // Force reactivity by creating a new sorted array
             const updatedEvents = [...state.value.events, newEvent]
             updatedEvents.sort((a, b) => a.sequenceNumber - b.sequenceNumber)
-            state.value.events = updatedEvents
+            // Trigger full state update to ensure reactivity
+            state.value = {
+              ...state.value,
+              events: updatedEvents
+            }
           }
         }
       )
@@ -382,8 +392,12 @@ export function useGame() {
               updatedEvents[eventIndex] = {
                 ...updatedEvents[eventIndex],
                 undone: updatedEvent.undone as boolean
+              } as GameEvent
+              // Trigger full state update to ensure reactivity
+              state.value = {
+                ...state.value,
+                events: updatedEvents
               }
-              state.value.events = updatedEvents
             }
           }
         }
@@ -399,7 +413,14 @@ export function useGame() {
         (payload) => {
           if (payload.new && state.value.game) {
             const updatedGame = payload.new as Record<string, unknown>
-            state.value.game.status = updatedGame.status as Game['status']
+            // Update the entire game object to ensure reactivity
+            state.value = {
+              ...state.value,
+              game: {
+                ...state.value.game,
+                status: updatedGame.status as Game['status']
+              }
+            }
           }
         }
       )
@@ -428,7 +449,13 @@ export function useGame() {
 
       if (error) throw error
 
-      state.value.game.status = reason === 'target_reached' ? 'completed' : 'abandoned'
+      state.value = {
+        ...state.value,
+        game: {
+          ...state.value.game,
+          status: reason === 'target_reached' ? 'completed' : 'abandoned'
+        }
+      }
 
       return { success: true }
     } catch (err) {
