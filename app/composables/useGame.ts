@@ -357,7 +357,34 @@ export function useGame() {
               payload: (e.payload || {}) as Record<string, unknown>,
             } as GameEvent
 
-            state.value.events = [...state.value.events, newEvent].sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+            // Force reactivity by creating a new sorted array
+            const updatedEvents = [...state.value.events, newEvent]
+            updatedEvents.sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+            state.value.events = updatedEvents
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_events',
+          filter: `game_id=eq.${gameId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            const updatedEvent = payload.new as Record<string, unknown>
+            // Find and update the event in our local state
+            const eventIndex = state.value.events.findIndex(e => e.id === updatedEvent.id)
+            if (eventIndex !== -1) {
+              const updatedEvents = [...state.value.events]
+              updatedEvents[eventIndex] = {
+                ...updatedEvents[eventIndex],
+                undone: updatedEvent.undone as boolean
+              }
+              state.value.events = updatedEvents
+            }
           }
         }
       )
