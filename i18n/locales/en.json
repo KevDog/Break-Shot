@@ -55,7 +55,9 @@
     "joinCode": "Join Code",
     "enterCode": "Enter join code",
     "waiting": "Waiting for opponent...",
-    "shareCode": "Share this code with your opponent"
+    "shareCode": "Share this code with your opponent",
+    "localGame": "Local Game",
+    "localGameDescription": "Two players, one device"
   },
   "setup": {
     "title": "Game Setup",

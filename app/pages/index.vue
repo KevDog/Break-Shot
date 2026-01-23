@@ -9,6 +9,14 @@
           {{ $t('session.create') }}
         </NuxtLink>
         
+        <!-- Local Game button -->
+        <NuxtLink to="/local/setup" class="btn btn--secondary btn--large w-full no-underline">
+          <span class="flex flex-col items-center gap-1">
+            <span>{{ $t('session.localGame') }}</span>
+            <span class="text-xs opacity-80">{{ $t('session.localGameDescription') }}</span>
+          </span>
+        </NuxtLink>
+        
         <!-- Join game form (input only, no button) -->
         <div>
           <label for="joinCode" class="visually-hidden">{{ $t('session.joinCode') }}</label>
