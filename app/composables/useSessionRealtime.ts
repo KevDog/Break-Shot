@@ -8,8 +8,10 @@ export function useSessionRealtime() {
 
   // Subscribe to session updates
   function subscribeToSession(sessionId: string): (() => void) {
+    console.log('Setting up realtime subscriptions for session:', sessionId)
+    
     const playersSubscription = supabase
-      .channel('players-changes')
+      .channel(`players-changes-${sessionId}`)
       .on(
         'postgres_changes',
         {
@@ -41,7 +43,7 @@ export function useSessionRealtime() {
       .subscribe()
 
     const sessionsSubscription = supabase
-      .channel('session-changes')
+      .channel(`session-changes-${sessionId}`)
       .on(
         'postgres_changes',
         {
@@ -51,21 +53,26 @@ export function useSessionRealtime() {
           filter: `id=eq.${sessionId}`,
         },
         async (payload) => {
-          console.log('Session change:', payload)
+          console.log('Session change received:', payload)
           
           if (payload.new && session.value) {
             const updatedSession = payload.new as any
+            console.log('Updating session status from', session.value.status, 'to', updatedSession.status)
             setSession({
               ...session.value,
               status: updatedSession.status,
             })
+            console.log('Session updated, new status:', session.value.status)
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Session subscription status:', status)
+      })
 
     // Return cleanup function
     return () => {
+      console.log('Cleaning up subscriptions')
       playersSubscription.unsubscribe()
       sessionsSubscription.unsubscribe()
     }

@@ -100,8 +100,10 @@ function handleCancel() {
 // Watch for opponent joining (session status changes to 'setup')
 watch(
   () => session.value?.status,
-  (newStatus) => {
+  (newStatus, oldStatus) => {
+    console.log('Session status changed from', oldStatus, 'to', newStatus)
     if (newStatus === 'setup' && session.value) {
+      console.log('Navigating to setup page...')
       navigateTo(`/session/${session.value.joinCode}/setup`)
     }
   }
