@@ -22,11 +22,11 @@ export function useSessionRealtime() {
           console.log('Player change:', payload)
           
           // Only process updates for the opponent
-          if (payload.new && 'user_id' in payload.new && currentPlayer.value) {
+          if (payload.new && currentPlayer.value) {
             const updatedPlayer = payload.new as any
             
             // Skip if this is the current player
-            if (updatedPlayer.user_id === currentPlayer.value.id) return
+            if (updatedPlayer.id === currentPlayer.value.id) return
             
             // Update opponent data
             setOpponent({
