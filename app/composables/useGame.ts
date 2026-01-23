@@ -258,7 +258,11 @@ export function useGame() {
         payload: (event.payload || {}) as Record<string, unknown>,
       } as GameEvent
 
-      state.value.events = [...state.value.events, newEvent]
+      // Use full state update to ensure reactivity
+      state.value = {
+        ...state.value,
+        events: [...state.value.events, newEvent].sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+      }
 
       // Check for game end condition
       if (gameState.value?.status === 'completed' && state.value.game) {
@@ -334,8 +338,10 @@ export function useGame() {
 
   // Subscribe to game events (realtime)
   function subscribeToGame(gameId: string) {
+    // Create unique channel name to avoid conflicts
+    const channelName = `game-${gameId}-${Math.random().toString(36).substring(7)}`
     const channel = supabase
-      .channel(`game:${gameId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
