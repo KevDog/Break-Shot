@@ -33,12 +33,18 @@
         <!-- End of Turn grouped box -->
         <div class="p-4 bg-bg-secondary rounded-xl ring-1 ring-white/10">
           <h3 class="text-sm font-medium text-text-secondary mb-3 text-center">End of Turn</h3>
-          <div class="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+          <div class="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
             <button
               class="btn btn--secondary w-full min-h-[56px]"
               @click="$emit('miss')"
             >
               Miss
+            </button>
+            <button
+              class="btn btn--secondary w-full min-h-[56px]"
+              @click="$emit('scratch')"
+            >
+              {{ $t('game.scratch') }}
             </button>
             <button
               class="btn btn--secondary w-full min-h-[56px]"
@@ -115,6 +121,7 @@ interface Emits {
   'decrement-balls': []
   'score-balls': []
   'miss': []
+  'scratch': []
   'foul': []
   'safety': []
   'rerack': []

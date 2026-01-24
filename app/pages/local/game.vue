@@ -82,6 +82,7 @@
         @decrement-balls="decrementBalls"
         @score-balls="handleScoreBalls"
         @miss="handleMiss"
+        @scratch="handleScratch"
         @foul="handleFoul"
         @safety="handleSafety"
         @rerack="handleRerack"
@@ -206,6 +207,16 @@ function decrementBalls() {
 async function handleScoreBalls() {
   if (!currentPlayerId.value || ballCount.value === 0) return
   await recordBallsMade(currentPlayerId.value, ballCount.value)
+  ballCount.value = 0
+}
+
+async function handleScratch() {
+  if (!currentPlayerId.value) return
+  // Scratch is a foul but typically on the break or when pocketing the cue ball
+  if (ballCount.value > 0) {
+    await recordBallsMade(currentPlayerId.value, ballCount.value)
+  }
+  await recordFoul(currentPlayerId.value)
   ballCount.value = 0
 }
 
