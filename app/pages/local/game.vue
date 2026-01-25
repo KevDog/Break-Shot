@@ -90,6 +90,13 @@
         @show-end-game="showEndGameConfirm = true"
       />
 
+      <!-- Rack Adjustment Button -->
+      <div class="flex justify-center">
+        <button class="btn btn--ghost text-sm" @click="showRackAdjustment = true">
+          Adjust Rack Scores
+        </button>
+      </div>
+
       <!-- End game confirmation modal -->
       <div v-if="showEndGameConfirm" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-[100]" @click.self="showEndGameConfirm = false">
         <div class="bg-bg-secondary rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center ring-1 ring-white/10">
@@ -115,13 +122,6 @@
         :current-balls-remaining="14 - (gameState?.ballsInCurrentRack || 0)"
         @adjust="handleRackAdjustment"
       />
-
-      <!-- Adjustment Button -->
-      <div class="flex justify-center mt-4">
-        <button class="btn btn--ghost text-sm" @click="showRackAdjustment = true">
-          Adjust Rack Scores
-        </button>
-      </div>
     </div>
   </main>
 </template>
