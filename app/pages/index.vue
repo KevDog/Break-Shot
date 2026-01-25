@@ -17,6 +17,14 @@
           </span>
         </NuxtLink>
         
+        <!-- Practice Mode button -->
+        <NuxtLink to="/practice/setup" class="btn btn--secondary btn--large w-full no-underline">
+          <span class="flex flex-col items-center gap-1">
+            <span>{{ $t('session.practiceMode') }}</span>
+            <span class="text-xs opacity-80">{{ $t('session.practiceModeDescription') }}</span>
+          </span>
+        </NuxtLink>
+        
         <!-- Join game form (input only, no button) -->
         <div>
           <label for="joinCode" class="visually-hidden">{{ $t('session.joinCode') }}</label>

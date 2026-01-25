@@ -57,7 +57,9 @@
     "waiting": "Waiting for opponent...",
     "shareCode": "Share this code with your opponent",
     "localGame": "Local Game",
-    "localGameDescription": "Two players, one device"
+    "localGameDescription": "Two players, one device",
+    "practiceMode": "Practice Mode",
+    "practiceModeDescription": "Solo practice session"
   },
   "setup": {
     "title": "Game Setup",
@@ -96,6 +98,26 @@
     "rematch": "Rematch",
     "endSession": "End Session",
     "confirmEnd": "Are you sure you want to end the game?"
+  },
+  "practice": {
+    "title": "Practice Mode",
+    "quickStart": "Quick Start",
+    "customTarget": "Custom Target",
+    "endlessMode": "Endless Mode",
+    "targetScore": "Target Score",
+    "currentRun": "Current Run",
+    "sessionHighRun": "Session High Run",
+    "totalBalls": "Total Balls",
+    "totalInnings": "Total Innings",
+    "averageRun": "Avg Balls/Inning",
+    "timeElapsed": "Time Elapsed",
+    "sessionStats": "Session Statistics",
+    "personalBest": "Personal Best",
+    "newPersonalBest": "New Personal Best!",
+    "sessionComplete": "Session Complete",
+    "finalStats": "Final Statistics",
+    "playAgain": "Play Again",
+    "backToMenu": "Back to Menu"
   },
   "status": {
     "online": "Online",
