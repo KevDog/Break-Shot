@@ -287,6 +287,25 @@ export function computeProjection(input: ProjectionInput): ProjectionOutput {
         break
       }
 
+      case 'rack_adjustment': {
+        // Manual adjustment of rack scores and balls remaining
+        const adjustment = event.payload as { player1RackScore: number; player2RackScore: number; ballsRemaining: number }
+        
+        // Set the rack scores directly
+        player1State.rackScore = adjustment.player1RackScore
+        player2State.rackScore = adjustment.player2RackScore
+        
+        // Calculate balls in current rack (14 - remaining)
+        gameState.ballsInCurrentRack = 14 - adjustment.ballsRemaining
+        
+        // Check if rerack is needed
+        if (gameState.ballsInCurrentRack >= 14) {
+          gameState.needsRerack = true
+        }
+        
+        break
+      }
+
       case 'undo': {
         // Undo events are handled by the undoneEventIds set above
         // The actual recomputation happens by skipping undone events

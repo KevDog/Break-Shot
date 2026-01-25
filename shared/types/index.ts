@@ -18,6 +18,7 @@ export type GameEventType =
   | 'safety'
   | 'end_turn'
   | 'rerack'
+  | 'rack_adjustment'
   | 'undo'
   | 'game_end'
 
@@ -88,6 +89,12 @@ export interface FoulOptionPayload {
   choice: FoulOptionChoice
 }
 
+export interface RackAdjustmentPayload {
+  player1RackScore: number
+  player2RackScore: number
+  ballsRemaining: number
+}
+
 // Empty payloads for events that don't need additional data
 export type EmptyPayload = Record<string, never>
 
@@ -121,6 +128,11 @@ export interface RerackEvent extends GameEventBase {
   payload: EmptyPayload
 }
 
+export interface RackAdjustmentEvent extends GameEventBase {
+  eventType: 'rack_adjustment'
+  payload: RackAdjustmentPayload
+}
+
 export interface UndoEvent extends GameEventBase {
   eventType: 'undo'
   payload: UndoPayload
@@ -138,6 +150,7 @@ export type GameEvent =
   | SafetyEvent
   | EndTurnEvent
   | RerackEvent
+  | RackAdjustmentEvent
   | UndoEvent
   | GameEndEvent
 

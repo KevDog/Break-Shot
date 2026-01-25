@@ -104,6 +104,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Rack Adjustment Modal -->
+      <RackAdjustmentModal
+        v-model="showRackAdjustment"
+        :player1-name="player1?.name"
+        :player2-name="player2?.name"
+        :current-player1-rack-score="player1State?.rackScore || 0"
+        :current-player2-rack-score="player2State?.rackScore || 0"
+        :current-balls-remaining="14 - (gameState?.ballsInCurrentRack || 0)"
+        @adjust="handleRackAdjustment"
+      />
+
+      <!-- Adjustment Button -->
+      <div class="flex justify-center mt-4">
+        <button class="btn btn--ghost text-sm" @click="showRackAdjustment = true">
+          Adjust Rack Scores
+        </button>
+      </div>
     </div>
   </main>
 </template>
@@ -114,6 +132,7 @@ import GameInfo from '~/components/game/GameInfo.vue'
 import BallsRemaining from '~/components/game/BallsRemaining.vue'
 import GameBanners from '~/components/game/GameBanners.vue'
 import GameControls from '~/components/game/GameControls.vue'
+import RackAdjustmentModal from '~/components/game/RackAdjustmentModal.vue'
 
 const { t } = useI18n()
 
@@ -127,6 +146,7 @@ const {
   player1DisplayScore,
   player2DisplayScore,
   recordBallsMade,
+  recordRackAdjustment,
   recordFoul,
   recordFoulOption,
   recordSafety,
@@ -141,6 +161,7 @@ const {
 
 const ballCount = ref(0)
 const showEndGameConfirm = ref(false)
+const showRackAdjustment = ref(false)
 
 // Computed
 const isPlayer1Turn = computed(() => gameState.value?.currentTurn === 'player1')
@@ -278,6 +299,11 @@ async function handleConfirmEndGame() {
   const playerId = currentPlayerId.value || player1.value?.id
   if (!playerId) return
   await endGame(playerId, 'abandoned')
+}
+
+async function handleRackAdjustment(adjustment: { player1RackScore: number; player2RackScore: number; ballsRemaining: number }) {
+  await recordRackAdjustment(adjustment)
+  ballCount.value = 0 // Reset ball count after adjustment
 }
 
 function handleRematch() {

@@ -232,6 +232,24 @@ export function useLocalGame() {
     saveToStorage()
   }
 
+  async function recordRackAdjustment(adjustment: { player1RackScore: number; player2RackScore: number; ballsRemaining: number }): Promise<void> {
+    if (!state.value.game || !state.value.player1) return
+
+    const event: GameEvent = {
+      id: `event-${Date.now()}`,
+      gameId: state.value.game.id,
+      playerId: state.value.player1.id, // Use player1 as the recorder
+      eventType: 'rack_adjustment',
+      payload: adjustment,
+      sequenceNumber: state.value.events.length + 1,
+      undone: false,
+      createdAt: new Date().toISOString(),
+    }
+
+    state.value.events.push(event)
+    saveToStorage()
+  }
+
   async function undoLastAction(playerId: string): Promise<void> {
     if (!state.value.game) return
 
@@ -364,6 +382,7 @@ export function useLocalGame() {
     recordSafety,
     recordEndTurn,
     recordRerack,
+    recordRackAdjustment,
     recordFoulOption,
     undoLastAction,
     endGame,
