@@ -318,6 +318,11 @@ async function handleMiss() {
 }
 
 async function handleRerack() {
+  // Record any balls made before reracking
+  if (ballCount.value > 0) {
+    await recordBallsMade(ballCount.value)
+  }
+  
   await recordRerack()
   ballCount.value = 0
 }

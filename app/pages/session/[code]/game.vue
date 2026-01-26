@@ -279,8 +279,13 @@ async function handleMiss() {
 
 async function handleRerack() {
   if (!currentPlayerId.value) return
+  
+  // Record any balls made before reracking
+  if (ballCount.value > 0) {
+    await recordBallsMade(currentPlayerId.value, ballCount.value)
+  }
+  
   await recordRerack(currentPlayerId.value)
-  // Reset ball count to 1 after rerack (new rack has 14 balls available)
   ballCount.value = 0
 }
 
